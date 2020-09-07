@@ -24,7 +24,7 @@
 -   第一种：对于 + 两边都是数值的话， + 就是加法的意思
 -   第二种：对于 + 两边至少有一边是字符串得话， + 就是拼接的意思
 
-```
+```java
 public class OperatorDemo02 {
     public static void main(String[] args) {
         // 字符串类型的变量基本使用
@@ -104,8 +104,8 @@ public class OperatorDemo02 {
 
 -   条件运算符格式：
 
-```
-条件表达式？结果1：结果2
+```java
+条件表达式?结果1:结果2
 ```
 
 -   条件运算符计算方式：

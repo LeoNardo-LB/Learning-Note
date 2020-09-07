@@ -32,7 +32,7 @@
 
 新建记事本,命名为 Hello,并写入以下内容
 
-```
+```java
 public class Hello {
     public static void main(String[] args) {
         System.out.println("Hello World");
