@@ -6,7 +6,7 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 
 ## Java NIO与传统IO的主要区别
 
-### IO
+#### IO
 
 阻塞IO(Blocking IO)
 
@@ -16,9 +16,7 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 
 >   以流的方式传输数据
 
-
-
-### NIO
+#### NIO
 
 面向缓冲区(Buffer Oriented)
 
@@ -34,7 +32,7 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 
 缓冲区就像是火车,货车(拉货的)
 
-使用通道的步骤为:
+#### 使用通道的步骤为
 
 1.  获取缓冲区(造车):ByteBuffer.allocate(capacity)
 2.  获取通道(造路):FIle[Socket]Channel.open(...,...)
@@ -42,8 +40,6 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 4.  切换模式:buf.flip()
 5.  缓冲区write数据到另一个通道(卸货):output.write(buf)
 6.  关闭通道
-
-
 
 >   如果数据量大,需要循环(拉货一次拉不完多拉几次)
 

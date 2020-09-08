@@ -1,10 +1,10 @@
 # DBUtils工具包
 
-### DBUtils的作用
+#### DBUtils的作用
 
 DBUtils工具包封装了底层 增删改查的操作,简化代码开发,我们仅需要提供数据库连接即可
 
-### DBUtils工具包的使用
+#### DBUtils工具包的使用
 
 1.  导入jar包
 
@@ -12,7 +12,7 @@ DBUtils工具包封装了底层 增删改查的操作,简化代码开发,我们�
 
 2.  编写代码
 
-### 编写代码
+## 编写代码
 
 #### 使用现成的jar中的QueryRunner测试增、删、改的操作:
 
@@ -237,7 +237,7 @@ public static void closeResource1(Connection conn,Statement ps,ResultSet rs){
 
 
 
-# 个人笔记:
+## 个人笔记:
 
 使用QueryRunner(外部类)  前提:导入第三方类,格式和之前自己写的一致,
 

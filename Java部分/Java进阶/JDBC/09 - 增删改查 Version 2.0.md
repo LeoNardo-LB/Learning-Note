@@ -4,11 +4,11 @@
 
 将各种操作操作抽象,封装成DAO: data(base) access object基类, 封装了针对于数据表的通用的操作
 
-### 优点
+#### 优点
 
 通用的增删改查操作
 
-### 父类获取子类Class 对象类型的方法
+#### 父类获取子类Class 对象类型的方法
 
 ```java
 private Class<T> clazz;
@@ -26,7 +26,7 @@ DAO(){
 }    
 ```
 
-### 增删改查具体代码
+#### 增删改查具体代码
 
 ```java
 public abstract class BaseDAO<T> {

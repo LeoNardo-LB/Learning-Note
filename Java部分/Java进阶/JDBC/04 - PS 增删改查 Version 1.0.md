@@ -4,7 +4,7 @@
 
 查询时需要传入 Class类型以指定返回值类型的版本
 
-### PreparedStatement的理解：
+#### PreparedStatement的理解：
 
 ① PreparedStatement 是Statement的子接口
 
@@ -12,21 +12,21 @@
 
 ③ 可以解决Statement的sql注入问题，拼串问题
 
-### 两种技术
+#### 两种技术
 
 1.  使用结果集的元数据：ResultSetMetaData
 
 >   getColumnCount():获取列数
-
+>
 >   getColumnLabel():获取列的别名
-
+>
 >   说明：如果sql中没给字段其别名，getColumnLabel()获取的就是列名
 
-1.  反射的使用（①创建对应的运行时类的对象 ② 在运行时，动态的调用指定的运行时类的属性、方法）
+2.  反射的使用（①创建对应的运行时类的对象 ② 在运行时，动态的调用指定的运行时类的属性、方法）
 
-### 使用PreparedStatement实现通用的增、删、改的方法：version 1.0
+#### 使用PreparedStatement实现通用的增、删、改的方法：version 1.0
 
-```
+```java
 //通用的增删改操作
 public void update(String sql,Object ...args){
     Connection conn = null;
@@ -54,7 +54,7 @@ public void update(String sql,Object ...args){
 
 ### 使用PreparedStatement实现通用的查询操作 version 1.0
 
-```
+```java
 // 针对于不同的表的通用的查询操作，返回表中的一条记录
 public <T> T getInstance(Class<T> clazz,String sql, Object... args) {
     Connection conn = null;
@@ -154,7 +154,7 @@ public <T> List<T> getForList(Class<T> clazz,String sql, Object... args){
 
 ### 查询特殊值
 
-```
+```java
     //用于查询特殊值的通用的方法
     public <E> E getValue(String sql,Object...args){
         Connection conn = JdbcUtils.getConnection();
@@ -180,3 +180,4 @@ public <T> List<T> getForList(Class<T> clazz,String sql, Object... args){
         return null;
 }
 ```
+
