@@ -236,10 +236,10 @@ public class StringNewTest {
 看下面一段代码
 
 ```java
-String a = new String("1") + new String("2"); // s3保存的是new String("12")的地址
-s3.intern(); // 在常量池中添加一份 "12"
-String b = "12"; // s4保存的是常量池中"12"的地址
-System.out.println(s3 == s4); 
+String a = new String("1") + new String("2"); // a保存的是new String("12")的地址
+a.intern(); // 在常量池中添加一份 "12"
+String b = "12"; // b保存的是常量池中"12"的地址
+System.out.println(a == b); 
 
 /*输出结果：
 JDK6：false
@@ -259,7 +259,7 @@ JDK7：true
 
 1.  String a = new String("1") + new String("2");  //s3保存的是new String("12")的地址，在堆中
 
-2.  s3.intern();
+2.  a.intern();
     -   JDK6：检索常量池，发现没有目标字符串，于是在常量池中添加一份 "12"
     -   JDK7：检索常量池，发现没有目标字符串，然后检索堆空间，发现有目标字符串，于是常量池建立索引，指向堆中的字符串“12”
 3.  String b = "12"; JDK6/JDK7都发现常量池中有“12”，JDK6直接返回字符串引用，JDK7返回字符串存储的堆的引用
