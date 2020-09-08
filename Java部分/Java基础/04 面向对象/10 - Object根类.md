@@ -20,7 +20,7 @@ public class MyClass /*extends Object*/ {
 
 根据JDK源代码及Object类的API文档，Object类当中包含的方法有11个。今天我们主要学习其中的5个：
 
-### toString()
+#### toString()
 
 public String toString()
 
@@ -32,7 +32,7 @@ public String toString()
 
 >   因为Java的引用数据类型的变量中存储的实际上时对象的内存地址，但是Java对程序员隐藏内存地址信息，所以不能直接将内存地址显示出来，所以当你打印对象时，JVM帮你调用了对象的toString()。
 
-#### 例如自定义的Person类：
+##### 例如自定义的Person类：
 
 ```java
 public class Person {  
@@ -46,7 +46,7 @@ public class Person {
 }
 ```
 
-### getClass()
+#### getClass()
 
 public final Class<?> getClass()：获取对象的运行时类型
 
@@ -59,7 +59,7 @@ public static void main(String[] args) {
 }
 ```
 
-### finalize()
+#### finalize()
 
 protected void finalize()：用于最终清理内存的方法
 
@@ -94,7 +94,7 @@ class MyData{
 -   每一个对象的finalize方法只会被调用一次。
 -   子类可以选择重写，一般用于彻底释放一些资源对象，而且这些资源对象往往时通过C/C++等代码申请的资源内存
 
-### hashCode()
+#### hashCode()
 
 public int hashCode()：返回每个对象的hash值。
 
@@ -113,7 +113,7 @@ public static void main(String[] args) {
 }
 ```
 
-### equals()
+#### equals()
 
 public boolean equals(Object obj)：用于判断当前对象this与指定对象obj是否“相等”
 

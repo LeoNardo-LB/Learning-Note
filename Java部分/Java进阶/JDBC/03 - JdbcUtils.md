@@ -1,6 +1,6 @@
 # JdbcUtils
 
-JdbcUtils 封装了连接数据库及关闭数据库通道的操作
+##### JdbcUtils 封装了连接数据库及关闭数据库通道的操作
 
 ```java
 /**

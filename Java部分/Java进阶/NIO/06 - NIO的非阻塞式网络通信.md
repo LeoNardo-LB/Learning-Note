@@ -19,14 +19,14 @@
 
 ## 选择器的应用
 
-1.  创建Selector: 通过调用Selector.open() 方法创建一个Selector。
+1.  ##### 创建Selector: 通过调用Selector.open() 方法创建一个Selector。
 
 ```java
 // 创建一个选择器
 Selector selector = Selector.open();
 ```
 
-2.  向选择器注册通道: SelectableChannel.register(Selector sel, int ops)
+2.  ##### 向选择器注册通道: SelectableChannel.register(Selector sel, int ops)
 
 ```java
 // 创建一个Socket套接字
@@ -47,7 +47,7 @@ SelectionKey key = channel.register(selector,SelectionKey.OP_READ);
 
 >   此处OP_READ为 SelectionKey的枚举类
 
-3.  SelectionKey 注册监听事件
+3.  ##### SelectionKey 注册监听事件
 
 ```java
 int interestSet = SelectionKey.OP_READ | SelectionKey.OP_WRITE
@@ -57,13 +57,13 @@ int interestSet = SelectionKey.OP_READ | SelectionKey.OP_WRITE
 >
 >   -   可以监听的事件类型（可使用SelectionKey      的四个常量表示）：
 >
->       读: SelectionKey.OP_READ （1）
+>       ​	读: SelectionKey.OP_READ （1）
 >
->       写: SelectionKey.OP_WRITE （4）
+>       ​	写: SelectionKey.OP_WRITE （4）
 >
->       连接: SelectionKey.OP_CONNECT（8）
+>       ​	连接: SelectionKey.OP_CONNECT（8）
 >
->       接收: SelectionKey.OP_ACCEPT （16）
+>       ​	接收: SelectionKey.OP_ACCEPT （16）
 >
 >   -   若注册时不止监听一个事件，则可以使用“位或”操作符连接。
 >
@@ -108,7 +108,7 @@ Java NIO中的DatagramChannel是一个能收发UDP包的通道。
 
 ![image.png](_images/1599120670361-75d8367a-159e-4a84-a253-315765472b84.png)
 
-#### 向管道写数据
+##### 向管道写数据
 
 ```java
 @Test
@@ -133,14 +133,14 @@ public void test1() throws IOException{
 }
 ```
 
-#### 从管道中读取数据,需要访问source通道
+##### 从管道中读取数据,需要访问source通道
 
 ```java
 // 从管道读取数据
 Pipe.SourceChannel sourceChannel = pipe.source();
 ```
 
-#### 调用source通道的read()方法来读取数据
+##### 调用source通道的read()方法来读取数据
 
 ```java
 ByteBuffer buf = Bytebuffer.allocate(1024);

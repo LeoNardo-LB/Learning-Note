@@ -24,7 +24,7 @@
 
 2.  反射的使用（①创建对应的运行时类的对象 ② 在运行时，动态的调用指定的运行时类的属性、方法）
 
-#### 使用PreparedStatement实现通用的增、删、改的方法：version 1.0
+##### 使用PreparedStatement实现通用的增、删、改的方法：version 1.0
 
 ```java
 //通用的增删改操作
@@ -52,7 +52,7 @@ public void update(String sql,Object ...args){
 }
 ```
 
-### 使用PreparedStatement实现通用的查询操作 version 1.0
+##### 使用PreparedStatement实现通用的查询操作 version 1.0
 
 ```java
 // 针对于不同的表的通用的查询操作，返回表中的一条记录
@@ -152,7 +152,7 @@ public <T> List<T> getForList(Class<T> clazz,String sql, Object... args){
 }
 ```
 
-### 查询特殊值
+##### 查询特殊值
 
 ```java
     //用于查询特殊值的通用的方法

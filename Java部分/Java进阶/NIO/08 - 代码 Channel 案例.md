@@ -1,6 +1,6 @@
 # 代码: Channel 案例
 
-#### 利用通道完成文件复制
+##### 利用通道完成文件复制
 
 ```java
 public void test1() {
@@ -66,7 +66,7 @@ public void test1() {
 }
 ```
 
-#### 内存映射(使用直接缓冲区完成文件的复制),只有ByteBuffer支持
+##### 内存映射(使用直接缓冲区完成文件的复制),只有ByteBuffer支持
 
 ```java
 public void test2() throws IOException {
@@ -88,7 +88,7 @@ public void test2() throws IOException {
 }
 ```
 
-#### 通道之间的数据传输
+##### 通道之间的数据传输
 
 ```java
 public void test3() throws IOException {
@@ -110,7 +110,7 @@ public void test3() throws IOException {
 }
 ```
 
-#### 分散和聚集
+##### 分散和聚集
 
 ```java
 public void test4() throws IOException {
@@ -142,7 +142,7 @@ public void test4() throws IOException {
 }
 ```
 
-#### 字符集Chaeset
+##### 字符集Chaeset
 
 ```java
 public void test5() throws CharacterCodingException {

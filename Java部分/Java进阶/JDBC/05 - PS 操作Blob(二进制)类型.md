@@ -4,14 +4,14 @@
 
 写入操作的方法：setBlob(InputStream is);
 
-读取操作的方法：
+##### 读取操作的方法：
 
 ```java
 Blob blob = getBlob(int index);
 InputStream is = blob.getBinaryStream();
 ```
 
-#### 插入insert
+##### 插入insert
 
 ```java
 //向数据表customers中插入Blob类型的字段
@@ -35,7 +35,7 @@ InputStream is = blob.getBinaryStream();
 }
 ```
 
-#### 查询query
+##### 查询query
 
 ```java
 //查询数据表customers中Blob类型的字段

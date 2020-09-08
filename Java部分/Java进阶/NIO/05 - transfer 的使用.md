@@ -1,16 +1,16 @@
 # transfer 的使用
 
-### transfer的作用
+## transfer的作用
 
 transfer的作用为将一个通道的数据直接映射到另一个通道
 
-### API说明
+## API说明
 
 -   transferFrom(输入源,0,size())：从输入源传输数据到调用方
 
 -   transferTo(0,size(),输出源)：从调用方传输数据到输出源
 
-
+##### 代码示例
 
 ```java
 //1.获取通道
