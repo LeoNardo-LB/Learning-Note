@@ -94,10 +94,6 @@ add eax,3 //使eax寄存器的值加3
 我们编写一个简单的代码，然后查看一下字节码的反编译后的结果
 
 ```java
-/**
- * @author: 陌溪
- * @create: 2020-07-04-21:17
- */
 public class StackStruTest {
     public static void main(String[] args) {
         int i = 2 + 3;
