@@ -1,4 +1,4 @@
-# StringTable 
+# StringTable
 
 ## String的基本特性
 
@@ -12,7 +12,7 @@
 
 -   实现了Serializable接口，可序列化
 -   实现了Comparable接口，可比较大小
--   在jdk8及以前，使用 final char[] 存储字符串数据。jdk9改用final byte[]
+-   在jdk8及以前，new出的String对象使用 final char[] 存储字符串数据。jdk9改用final byte[]
     -   改用原因：
         1.  char类型占2个字节，byte类型占用1个字节
         2.  多数研究表明，大多数字符串存储的只是一些符号及英文字母，128位足够使用
@@ -20,11 +20,12 @@
 
 ### String 的不可变性
 
-字符串常量池中只保留一份相同的字符串常量。
+-   字符串常量池中只保留一份相同的字符串常量。
 
-字符串常量池 String Pool是一个固定大小的Hashtable，在JDK7之前默认大小为1009，在JDK7及以后默认为60013，在JDK8及以后设置大小不能小于1009
+-   字符串常量池 String Pool是一个固定大小的Hashtable，在JDK7之前默认大小为1009，在JDK7及以后默认为60013，在JDK8及以后设置大小不能小于1009
+-   字符串在堆中的存储格式为 final char[]（JDK8 之前），不可变
 
-设置StringTable的长度：-XX:StringTablesize 
+>   设置StringTable的长度：-XX:StringTablesize 
 
 ##### 不可变性测试代码
 
@@ -147,7 +148,7 @@ s1 + s2的执行细节
 |                                                              | 线程安全                                                     | 线程不安全       |
 |                                                              | 多线程操作字符串                                             | 单线程操作字符串 |
 
-### Intern()的使用
+### Intern()的使用（重要）
 
 intern()方法的说明：
 
@@ -267,7 +268,7 @@ JDK7：true
     -   JDK6：一个是a是堆空间的地址，b是常量池的地址，因此不相等
     -   JDK7：两个实际上最终指向的都是堆空间的地址，因此相等
 
-#### 总结
+##### 小总结
 
 JDK1.6中，将这个字符串对象尝试放入串池。
 
@@ -278,3 +279,48 @@ JDK1.7起，将这个字符串对象尝试放入串池。
 
 -   如果串池中有，则并不会放入。返回已有的串池中的对象的地址
 -   如果没有，则会把**对象的引用地址**复制一份，放入串池，并返回串池中的引用地址
+
+#### intern效率实验
+
+```java
+public class StringTest {
+    static final int MAX_COUNT = 1000 * 10000;
+    static final String[] arr = new String[MAX_COUNT];
+
+    public static void main(String[] args) {
+        Integer [] data = new Integer[]{1,2,3,4,5,6,7,8,9,10};
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < MAX_COUNT; i++) {
+            arr[i] = new String(String.valueOf(data[i%data.length])); //未添加intern()
+            arr[i] = new String(String.valueOf(data[i%data.length])).intern(); //添加了intern()
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("花费的时间为：" + (end - start));
+
+        try {
+            Thread.sleep(1000000);
+        } catch (Exception e) {
+            e.getStackTrace();
+        }
+    }
+}
+```
+
+实验可知
+
+-   未添加intern()时，实例数为10000000，内存占用为240m，执行时长为3000ms~7000ms
+-   添加intern()后，实例数为1400000左右，内存占用为70m，执行时长为1100ms左右
+
+
+
+## G1的去重操作
+
+说明：G1的去重操作指的是去除**堆**中的重复字符串
+
+#### 实现：
+
+-   当垃圾收集器工作的时候，会访问堆上存活的对象。对每一个访问的对象都会检查是否是候选的要去重的string对象。
+-   如果是，把这个对象的一个引用插入到队列中等待后续的处理。一个去重的线程在后台运行，处理这个队列。处理队列的一个元素意味着从队列删除这个元素，然后尝试去重它引用的string对象。
+-   使用一个hashtab1e来记录所有的被string对象使用的不重复的char数组。当去重的时候，会查这个hashtable，来看堆上是否已经存在一个一模一样的char数组。
+-   如果存在，string对象会被调整引用那个数组，释放对原来的数组的引用，最终会被垃圾收集器回收掉。
+-   如果查找失败，char数组会被插入到hashtable，这样以后的时候就可以共享这个数组了。
