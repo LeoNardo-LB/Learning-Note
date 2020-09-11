@@ -400,7 +400,7 @@ public E remove() {
 }
 ```
 
-具体移除操作：public E removeFirst() -> private E unlinkFirst(Node<E> f)
+具体移除操作：public E removeFirst() -> private E unlinkFirst(Node\<E> f)
 
 ```java
 /*
