@@ -317,7 +317,7 @@ private static class Node<E> {
 
 ### 源码分析
 
-#### Node 静态节点类
+#### 静态节点类 `private static class Node<E>`
 
 ```java
 private static class Node<E> {
@@ -333,16 +333,7 @@ private static class Node<E> {
 }
 ```
 
-#### 添加元素到尾部 public boolean add(E e)
-
-```java
-public boolean add(E e) {
-    linkLast(e);	// 具体添加节点操作
-    return true;
-}
-```
-
-具体添加操作：linkLast(e)
+#### 添加元素到尾部：`void linkLast(E e)`
 
 ```java
 /**
@@ -363,15 +354,7 @@ void linkLast(E e) {
 
 说明：last，first为 节点元素 `Node<E>` 
 
-#### 添加元素到头部 public void addFirst(E e)
-
-```java
-public void addFirst(E e) {
-    linkFirst(e);
-}
-```
-
-具体添加操作：linkFirst(e)
+#### 添加元素到头部：`void linkFirst(E e)`
 
 ```java
 /**
@@ -389,31 +372,27 @@ private void linkFirst(E e) {
     modCount++;	// 修改次数+1
 }
 ```
-
-#### 移除元素（头元素） public E remove()
-
-默认移除第一个
+#### 添加元素到指定节点之前 `void linkBefore(E e, Node<E> succ)`
 
 ```java
-public E remove() {
-    return removeFirst();
+void linkBefore(E e, Node<E> succ) {
+    // assert succ != null; succ为指定节点
+
+    final Node<E> pred = succ.prev;	// 保存succ的前驱为pred
+    final Node<E> newNode = new Node<>(pred, e, succ);	//new一个节点，保存数据。将pred（succ的前驱）设为新节点的前驱，将succ设为新节点的后驱
+    succ.prev = newNode;	//将succ的前驱指向新节点
+    if (pred == null)	//若succ的前驱为null，则说明 succ为头节点。此时只需要让新节点成为头节点即可
+        first = newNode;
+    else	//非头节点的情况：将初始状态 succ的前驱节点的后驱指向新节点即可
+        pred.next = newNode;
+    size--;	// 链表尺寸-1
+    modCount++;	// 修改次数+1
 }
 ```
 
-具体移除操作：public E removeFirst() -> private E unlinkFirst(Node\<E> f)
+#### 删除头节点 `private E unlinkFirst(Node<E> f)`
 
 ```java
-/*
-removeFirst()方法的作用是判断头节点是否为空，为空则抛出异常
-unlinkFirst(Node<E> f)才是具体的一处操作
-*/
-public E removeFirst() {
-    final Node<E> f = first; // 将头节点存储为f
-    if (f == null)
-        throw new NoSuchElementException();
-    return unlinkFirst(f);
-}
-
 private E unlinkFirst(Node<E> f) {
     // assert f == first && f != null;
     final E element = f.item;	// 存储当前第一个元素，用于返回
@@ -431,7 +410,27 @@ private E unlinkFirst(Node<E> f) {
 }
 ```
 
-#### 移除元素（索引）public E remove(int index)
+#### 删除尾节点 `private E unlinkLast(Node<E> l)`
+
+```java
+private E unlinkLast(Node<E> l) {
+    // assert l == last && l != null;
+    final E element = l.item;	// 取出最后一个元素的 数据，准备返回
+    final Node<E> prev = l.prev;	// 获取最后一个元素前的前驱结点 prev
+    l.item = null;	// 将最后一个元素的数据置空
+    l.prev = null; // help GC 将最后一个元素的前驱节点置空
+    last = prev;	// 让初始状态倒数第二个元素成为last
+    if (prev == null)	// 若当前last为空，则说明只有一个节点，则把头节点也置空
+        first = null;
+    else	// 否则就把当下最后一个节点的后驱节点置空
+        prev.next = null;
+    size--;	// 链表尺寸-1
+    modCount++;	// 修改次数+1
+    return element;
+}
+```
+
+#### 删除指定节点（索引）`public E remove(int index)`
 
 ```java
 public E remove(int index) {
@@ -460,7 +459,7 @@ Node<E> node(int index) {
 }
 ```
 
-具体的移除操作：unlink(node(index))
+具体的移除操作：`E unlink(Node<E> x)`
 
 ```java
 /**
@@ -495,26 +494,6 @@ E unlink(Node<E> x) {
    	size--;	// 链表尺寸-1
     modCount++;	// 修改次数+1
     return element;
-}
-```
-
-#### 将节点添加到指定位置：linkBefore(element, node(index))
-
-将元素插入到指定非空结点之前（Inserts element e before non-null Node succ.）
-
-```java
-void linkBefore(E e, Node<E> succ) {
-    // assert succ != null; succ为指定节点
-    
-    final Node<E> pred = succ.prev;	// 保存succ的前驱为pred
-    final Node<E> newNode = new Node<>(pred, e, succ);	//new一个节点，保存数据。将pred（succ的前驱）设为新节点的前驱，将succ设为新节点的后驱
-    succ.prev = newNode;	//将succ的前驱指向新节点
-    if (pred == null)	//若succ的前驱为null，则说明 succ为头节点。此时只需要让新节点成为头节点即可
-        first = newNode;
-    else	//非头节点的情况：将初始状态 succ的前驱节点的后驱指向新节点即可
-        pred.next = newNode;
-	size--;	// 链表尺寸-1
-    modCount++;	// 修改次数+1
 }
 ```
 
