@@ -127,3 +127,116 @@ public void test(){
 
 Map接口的常用实现类：HashMap、TreeMap、LinkedHashMap和Properties。其中**HashMap**是Map 接口使用频率最高的实现类。
 
+### HashMap，HashTable的异同
+
+-   HashMap与HashTable都是哈希表，
+-   HashMap和Hashtable判断两个 key 相等的标准是：两个 key 的hashCode 值相等，并且equals() 方法也返回 true。因此，为了成功地在哈希表中存储和获取对象，用作键的对象必须实现 hashCode 方法和 equals 方法。
+-   Hashtable是线程安全的，任何非 null 对象都可以用作键或值。
+-   HashMap是线程不安全的，并允许使用 null 值和 null 键。
+
+```java
+public static void main(String[] args) {
+    HashMap<String, Double> map = new HashMap<>();
+    map.put("张三", 10000.0);
+
+    //key相同，新的value会覆盖原来的value（String重写了hashCode和equals方法）
+    map.put("张三", 12000.0);
+    map.put("李四", 14000.0);
+
+    //HashMap支持key和value为null值
+    String name = null;
+    Double salary = null;
+    map.put(name, salary);
+
+    Set<Map.Entry<String, Double>> entrySet = map.entrySet();
+    for (Map.Entry<String, Double> entry : entrySet) {
+        System.out.println(entry);
+    }
+}
+```
+
+### LinkedHashMap
+
+LinkedHashMap 是 HashMap 的子类。在HashMap的基础上维护了一个连接着所有Map.Entry的双向链表，因此LinkedHashMap可以实现顺序插入。
+
+```java
+public static void main(String[] args) {
+    LinkedHashMap<String,Double> map = new LinkedHashMap<>();
+    map.put("张三", 10000.0);
+    //key相同，新的value会覆盖原来的value
+    //因为String重写了hashCode和equals方法
+    map.put("张三", 12000.0);
+    map.put("李四", 14000.0);
+    //HashMap支持key和value为null值
+    String name = null;
+    Double salary = null;
+    map.put(name, salary);
+
+    Set<Entry<String, Double>> entrySet = map.entrySet();
+    for (Entry<String, Double> entry : entrySet) {
+        System.out.println(entry);
+    }
+}
+```
+
+### TreeMap
+
+基于**红黑树**（Red-Black tree）的 NavigableMap 实现。该映射根据其键的自然顺序进行排序，或者根
+据创建映射时提供的 Comparator 进行排序，具体取决于使用的构造方法。
+
+```java
+@Test
+public void test1() {
+    TreeMap<String,Integer> map = new TreeMap<>();
+    map.put("Jack", 11000);
+    map.put("Alice", 12000);
+    map.put("zhangsan", 13000);
+    map.put("baitao", 14000);
+    map.put("Lucy", 15000);
+    //String实现了Comparable接口，默认按照Unicode编码值排序
+    Set<Entry<String, Integer>> entrySet = map.entrySet();
+    for (Entry<String, Integer> entry : entrySet) {
+        System.out.println(entry);
+    }
+}
+@Test
+public void test2() {
+    //指定定制比较器Comparator，按照Unicode编码值排序，但是忽略大小写
+    TreeMap<String,Integer> map = new TreeMap<>(new Comparator<String>() {
+        @Override
+        public int compare(String o1, String o2) {
+            return o1.compareToIgnoreCase(o2);
+        }
+    });
+    map.put("Jack", 11000);
+    map.put("Alice", 12000);
+    map.put("zhangsan", 13000);
+    map.put("baitao", 14000);
+    map.put("Lucy", 15000);
+
+    Set<Entry<String, Integer>> entrySet = map.entrySet();
+    for (Entry<String, Integer> entry : entrySet) {
+        System.out.println(entry);
+    }
+}
+```
+
+### Properties
+
+Properties 类是 Hashtable 的子类，Properties 可保存在流中或从流中加载。属性列表中每个键及其
+对应值都是一个字符串。
+存取数据时，建议使用**setProperty(String key,String value)**方法和**getProperty(String key)**方法。
+
+```java
+public static void main(String[] args) {
+    Properties properties = System.getProperties();
+    String p2 = properties.getProperty("file.encoding");//当前源文件字符编码
+    System.out.println(p2);
+}
+```
+
+
+
+## 集合框架总结
+
+![image-20200913161517526](_images/image-20200913161517526.png)

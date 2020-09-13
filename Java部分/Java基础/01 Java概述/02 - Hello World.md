@@ -45,3 +45,5 @@ public class Hello {
 ![image.png](_images/1599068131564-fdcfe68f-2b6e-4dc3-911a-b2e93cbad360.png)
 
 运行成功!第一个Java程序编写完成!!!!
+
+![image-20200913101856010](_images/image-20200913101856010.png)
