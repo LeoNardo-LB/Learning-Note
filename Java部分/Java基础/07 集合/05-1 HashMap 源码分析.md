@@ -228,26 +228,32 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
     else {
         Node<K,V> e; 
         K k;
-        // 若哈希值相等，且内容或引用相等，则覆盖
+        // 若哈希值相等，且内容或引用相等，则覆盖（其间给k赋值）
         if (p.hash == hash && ((k = p.key) == key || (key != null && key.equals(k))))
             e = p;
-        // 
+        // 若该节点属于 红黑树的节点类型，则添加到红黑树中
         else if (p instanceof TreeNode)
             e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+        // 否则执行如下操作
         else {
-            for (int binCount = 0; ; ++binCount) {
+            // 在该索引所指的链表上往后找
+            for (int binCount = 0; ; ++binCount) { // binCount为计数器，用于判断是否使链表转为红黑树
+                // 如果找到最后为null了，则生成新的节点
                 if ((e = p.next) == null) {
                     p.next = newNode(hash, key, value, null);
+                    // 若节点数达到转树阈值，则执行转为红黑树的操作
                     if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                         treeifyBin(tab, hash);
                     break;
                 }
+                // 判断该节点是否与新的数据相等，若相等，则结束循环
                 if (e.hash == hash &&
                     ((k = e.key) == key || (key != null && key.equals(k))))
                     break;
-                p = e;
+                p = e; // 往后找
             }
         }
+        // 
         if (e != null) { // existing mapping for key
             V oldValue = e.value;
             if (!onlyIfAbsent || oldValue == null)
