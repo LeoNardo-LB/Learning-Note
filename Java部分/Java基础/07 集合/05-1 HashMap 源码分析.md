@@ -2,6 +2,20 @@
 
 注意：请参照JDK1.8的HashMap源码
 
+HashMap几个关键点：
+
+1.  几个HashMap的属性
+
+2.  新建HashMap操作
+
+3.  添加第一个节点操作
+4.  添加后续节点操作
+    -   覆盖
+    -   添加到尾部
+5.  数组转红黑树操作
+6.  红黑树退化数组操作
+7.  扩容操作
+
 ### HashMap流程图
 
 ![hashmap1](_images/hashmap1.png)

@@ -236,7 +236,3 @@ public static void main(String[] args) {
 ```
 
 
-
-## 集合框架总结
-
-![image-20200913161517526](_images/image-20200913161517526.png)
