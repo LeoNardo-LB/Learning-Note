@@ -63,7 +63,7 @@ transient Node<K,V>[] table;
 transient Set<Map.Entry<K,V>> entrySet;
 ```
 
-### 常量
+### 常量（默认值）
 
 ```java
 /**
@@ -115,6 +115,58 @@ static final int UNTREEIFY_THRESHOLD = 6;
 static final int MIN_TREEIFY_CAPACITY = 64;
 
 ```
+
+
+
+## 存储数据的链表（红黑树）节点：Node
+
+```java
+/**
+ * Basic hash bin node, used for most entries.  (See below for
+ * TreeNode subclass, and in LinkedHashMap for its Entry subclass.)
+ */
+static class Node<K,V> implements Map.Entry<K,V> {
+    final int hash;
+    final K key;
+    V value;
+    Node<K,V> next;
+
+    Node(int hash, K key, V value, Node<K,V> next) {
+        this.hash = hash;
+        this.key = key;
+        this.value = value;
+        this.next = next;
+    }
+
+    public final K getKey()        { return key; }
+    public final V getValue()      { return value; }
+    public final String toString() { return key + "=" + value; }
+
+    public final int hashCode() {
+        return Objects.hashCode(key) ^ Objects.hashCode(value);
+    }
+
+    public final V setValue(V newValue) {
+        V oldValue = value;
+        value = newValue;
+        return oldValue;
+    }
+
+    public final boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (o instanceof Map.Entry) {
+            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
+            if (Objects.equals(key, e.getKey()) &&
+                Objects.equals(value, e.getValue()))
+                return true;
+        }
+        return false;
+    }
+}
+```
+
+这是一个内部类，实现了 Map.Entry接口，用于存储键值对。
 
 
 
@@ -205,7 +257,7 @@ static final int hash(Object key) {
 ```java
 /**
  * Implements Map.put and related methods.
- *
+ * 
  * @param hash hash for key
  * @param key the key
  * @param value the value to put
@@ -253,7 +305,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
                 p = e; // 往后找
             }
         }
-        // 
+        // 若e不为空，则说明没有到链表的末尾就找到了，则覆盖该值，并返回。
         if (e != null) { // existing mapping for key
             V oldValue = e.value;
             if (!onlyIfAbsent || oldValue == null)
@@ -262,11 +314,104 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
             return oldValue;
         }
     }
+    // 增加修改次数
     ++modCount;
+    // 如果元素个数大于阈值，则扩容
     if (++size > threshold)
         resize();
     afterNodeInsertion(evict);
     return null;
+}
+```
+
+扩容操作：`final Node<K,V>[] resize()`
+
+```java
+/**
+ * Initializes or doubles table size.  If null, allocates in
+ * accord with initial capacity target held in field threshold.
+ * Otherwise, because we are using power-of-two expansion, the
+ * elements from each bin must either stay at same index, or move
+ * with a power of two offset in the new table.
+ * 初始化或增加表大小。 如果为空，则根据字段阈值中保持的初始容量目标进行分配。 
+ * 否则，因为我们使用的是2的幂，所以每个bin中的元素必须保持相同的索引，或者在新表中以2的幂偏移。
+ *
+ * @return the table
+ */
+final Node<K,V>[] resize() {
+    Node<K,V>[] oldTab = table;	// 将当前数组备份为oldTab，以便后续操作，防止对当前数据造成破坏
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;	// 保存当前数组长度到oldCap
+    int oldThr = threshold;	// 保存当前扩容阈值到oldThr
+    int newCap, newThr = 0;	// 初始化新数组长度与新数组的扩容阈值
+    if (oldCap > 0) {
+        // 判断原数组长度，若大于最大容量，则直接返回
+        if (oldCap >= MAXIMUM_CAPACITY) {
+            threshold = Integer.MAX_VALUE;
+            return oldTab;
+        }
+        // 让新数组的长度为旧表的两倍，在此基础上判断：新数组长度是否大于最大容量且判断旧表容量是否大于默认初始值（16）。若两个条件都满足，则使新的扩容阈值为之前的2倍。
+        else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY && oldCap >= DEFAULT_INITIAL_CAPACITY)
+            newThr = oldThr << 1; // double threshold
+    }
+    else if (oldThr > 0) // initial capacity was placed in threshold
+        newCap = oldThr;
+    // oldCap <= 0的，无参构造器（或容量为0）情况下执行的操作
+    else {               // zero initial threshold signifies using defaults
+        newCap = DEFAULT_INITIAL_CAPACITY;	// 数组赋予默认容量（16）
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); // 赋予默认阈值
+    }
+    if (newThr == 0) {
+        float ft = (float)newCap * loadFactor;
+        newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                  (int)ft : Integer.MAX_VALUE);
+    }
+    threshold = newThr; // 扩容当前阈值
+    @SuppressWarnings({"rawtypes","unchecked"})
+    Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap]; // 创建新数组，准备扩容
+    table = newTab;
+    if (oldTab != null) {//旧数组不为空，则重新分布原来的元素到新的数组中，性能消耗操作
+        for (int j = 0; j < oldCap; ++j) {
+            Node<K,V> e;
+            if ((e = oldTab[j]) != null) {//e暂存每个位置的第一个节点（非空）
+                oldTab[j] = null;//原位置置空
+                if (e.next == null)//最后一个节点（只有一个节点）
+                    newTab[e.hash & (newCap - 1)] = e;//重新计算这个节点的位置并存入
+                else if (e instanceof TreeNode)//如果是树形节点，重新拆解树
+                    ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                else { // preserve order 原位置是个链表，重新计算每个元素位置并存入
+                    Node<K,V> loHead = null, loTail = null;
+                    Node<K,V> hiHead = null, hiTail = null;
+                    Node<K,V> next;
+                    do {
+                        next = e.next;
+                        if ((e.hash & oldCap) == 0) {
+                            if (loTail == null)
+                                loHead = e;
+                            else
+                                loTail.next = e;
+                            loTail = e;
+                        }
+                        else {
+                            if (hiTail == null)
+                                hiHead = e;
+                            else
+                                hiTail.next = e;
+                            hiTail = e;
+                        }
+                    } while ((e = next) != null);
+                    if (loTail != null) {
+                        loTail.next = null;
+                        newTab[j] = loHead;
+                    }
+                    if (hiTail != null) {
+                        hiTail.next = null;
+                        newTab[j + oldCap] = hiHead;
+                    }
+                }
+            }
+        }
+    }
+    return newTab;
 }
 ```
 
