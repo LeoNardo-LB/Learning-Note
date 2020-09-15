@@ -154,6 +154,54 @@ public void server() throws Exception {
 }
 ```
 
+**循环发送消息**
+
+```java
+@Test
+public void Server() throws IOException, InterruptedException {
+    System.out.println("服务器启动中。。。");
+    ServerSocket serverSocket = new ServerSocket(5782);
+
+    System.out.println("等待连接中。。。");
+    while (true) {
+        Socket accept = serverSocket.accept();
+        InputStream acceptIS = null;
+        Thread.sleep(1000);
+        acceptIS = accept.getInputStream();
+        int len = 0;
+        byte[] bytes = new byte[1024];
+        while ((len = acceptIS.read(bytes)) != -1) {
+            System.out.println(new String(bytes, 0, len));
+        }
+        acceptIS.close();
+    }
+}
+
+public static void main(String[] args) throws IOException, InterruptedException {
+
+    Scanner sc = new Scanner(System.in);
+
+    while (true) {
+
+        Socket socket = new Socket("127.0.0.1", 5782);
+
+        OutputStream socketOS = socket.getOutputStream();
+
+        System.out.printf("请输入消息：");
+        String s = sc.nextLine();
+        if ("quit".equals(s)) {
+            socket.close();
+            break;
+        }
+        socketOS.write(s.getBytes());
+		
+        // 注意：每发送一个消息需要重新生成一个socket
+        socketOS.close();
+        //			socketOS.flush();
+    }
+}
+```
+
 
 
 ## UDP网络编程
@@ -180,7 +228,7 @@ UDP协议没有拥塞控制，所以当网络出现的拥塞不会导致主机�
 #### 代码演示
 
 ```java
-// 服务器 发送端
+// 客户端 发送端
 @Test
 public void UDPclient() throws IOException {
     DatagramSocket ds = new DatagramSocket();
@@ -200,15 +248,20 @@ public void UDPclient() throws IOException {
     }
 }
 
-// 服务器 接收端
+// 服务器，接收端
 @Test
 public void UDPServer() throws IOException {
+    // 创建报文接收的socket
     DatagramSocket datagramSocket = new DatagramSocket(9999);
 
+    // 设置报文一次接收的大小
     byte[] bytes = new byte[1024];
+
     DatagramPacket datagramPacket = new DatagramPacket(bytes, bytes.length);
 
+    // 循环接收UDP包
     while (true) {
+
         datagramSocket.receive(datagramPacket);
 
         byte[] data = datagramPacket.getData();
