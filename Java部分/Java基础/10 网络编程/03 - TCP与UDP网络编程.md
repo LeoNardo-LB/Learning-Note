@@ -154,53 +154,150 @@ public void server() throws Exception {
 }
 ```
 
+**改进：多线程上传文件**
+
+```java
+// 客户端
+@Test
+public void client() throws Exception {
+
+    Socket socket = new Socket("localhost", 8888);
+    File file = new File("D:\\下载\\百度云下载\\java8.CHM");
+    BufferedInputStream is = new BufferedInputStream(new FileInputStream(file));
+    // 获取网络的写出流
+    OutputStream socketOutputStream = socket.getOutputStream();
+
+    byte[] bytes = new byte[1024];
+    int len;
+
+    System.out.println("发送文件中...");
+
+    // 发送文件本体
+    while ((len = is.read(bytes)) != -1) {
+        socketOutputStream.write(bytes, 0, len);
+    }
+
+    //关闭资源（这也会将Socket的资源关闭）
+
+    socketOutputStream.close();
+
+    System.out.println("文件发送完毕！");
+}
+
+// 服务端
+@Test
+public void server() throws Exception {
+    ServerSocket serverSocket = new ServerSocket(8888);
+    while (true) {
+        Socket accept = serverSocket.accept();
+        // 启动一个新线程以接收文件
+        new ReceiveFileThread(accept).start();
+    }
+}
+
+// 接收文件的内部类
+class ReceiveFileThread extends Thread {
+
+    Socket socket = null;
+
+    public ReceiveFileThread(Socket socket) {
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        InputStream acceptInputStream = null;
+        FileOutputStream fileOutputStream = null;
+        try {
+
+            // 获取网络写入流
+            acceptInputStream = socket.getInputStream();
+
+            int len = 0;
+            byte[] bytes = new byte[8];
+
+            long l = System.currentTimeMillis();
+
+            fileOutputStream = new FileOutputStream("F:\\" + l);
+
+            System.out.println(Thread.currentThread().getName() + " 已连接，接收文件中...");
+            // 获取文件本体
+            while ((len = acceptInputStream.read(bytes)) != -1) {
+                fileOutputStream.write(bytes, 0, len);
+            }
+
+            System.out.println(Thread.currentThread().getName() + " 线程文件接收完毕！");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭资源
+            try {
+                fileOutputStream.close();
+                acceptInputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
 **循环发送消息**
 
 ```java
+// 服务端，一次连接，接收客户端循环发送的数据
 @Test
 public void Server() throws IOException, InterruptedException {
     System.out.println("服务器启动中。。。");
     ServerSocket serverSocket = new ServerSocket(5782);
 
-    System.out.println("等待连接中。。。");
+    // 建立连接
+    Socket accept = serverSocket.accept();
+
+    // 从连接获取输入流
+    InputStream acceptInputStream = accept.getInputStream();
+
     while (true) {
-        Socket accept = serverSocket.accept();
-        InputStream acceptIS = null;
-        Thread.sleep(1000);
-        acceptIS = accept.getInputStream();
         int len = 0;
         byte[] bytes = new byte[1024];
-        while ((len = acceptIS.read(bytes)) != -1) {
+        while ((len = acceptInputStream.read(bytes)) != -1) {
             System.out.println(new String(bytes, 0, len));
         }
-        acceptIS.close();
     }
 }
 
+// 客户端，一次连接，从控制台输入，可以循环发送消息
 public static void main(String[] args) throws IOException, InterruptedException {
 
     Scanner sc = new Scanner(System.in);
 
+    // 初始化Socket，同时建立连接
+    Socket socket = new Socket("127.0.0.1", 5782);
+
+    // 从Socket连接获取输出流
+    OutputStream socketOutputStream = socket.getOutputStream();
+
+    // 循环输出消息
     while (true) {
-
-        Socket socket = new Socket("127.0.0.1", 5782);
-
-        OutputStream socketOS = socket.getOutputStream();
-
         System.out.printf("请输入消息：");
         String s = sc.nextLine();
         if ("quit".equals(s)) {
             socket.close();
             break;
         }
-        socketOS.write(s.getBytes());
-		
-        // 注意：每发送一个消息需要重新生成一个socket
-        socketOS.close();
-        //			socketOS.flush();
+        socketOutputStream.write(s.getBytes());
+
+        socketOutputStream.flush();
     }
+    socketOutputStream.close();
 }
 ```
+
+>   注意：
+>
+>   如果服务器在循环体内建立连接，那么需要使连接在循环体内（一般为末尾处）关闭。这相当于每次通信建立一次连接，开销大。
+>
+>   如果服务端与客户端一次只建立一个连接，获取一次输入/输出通道，若要达到循环通信的效果，则需要在循环体外建立一次连接，获取一次输出/输入通道，且使输出通道在循环体末尾使用 `flush()` 来刷新数据。
 
 
 
