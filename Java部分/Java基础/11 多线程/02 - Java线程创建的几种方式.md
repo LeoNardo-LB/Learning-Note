@@ -1,4 +1,4 @@
-# Java线程的创建与Thread类
+# Java线程的创建
 
 在Java中，万物皆对象，当然线程也为对象之一
 
@@ -28,7 +28,7 @@ java虚拟机是支持多线程的，当运行Java程序时，至少已经有一
 -   不要重复启动同一个线程，否则抛出异常 IllegalThreadStateException
 -   不要使用Junit单元测试多线程，不支持，主线程结束后会调用 System.exit() 直接退出JVM;
 
-### 继承Thread类
+### 1、继承Thread类
 
 Java中 java.lang.Thread 是表示线程的类，每个Thread类或其子类的实例代表一个线程对象。
 
@@ -77,7 +77,7 @@ public class Demo01 {
 }
 ```
 
-### 实现Runnable接口
+### 2、实现Runnable接口
 
 Java有单继承的限制，若想要实现多个线程的多样性，可用核心类库中的Runnable接口：我们可以实现Runnable接口，重写run()方法，然后再通过Thread类的对象代理启动和执行我们的线程体run()方法
 
@@ -147,11 +147,16 @@ new Thread(new Runnable(){
 
 >   依旧使用 start() 启动线程
 
-### Thread VS Runnable（区别）
+### Thread类与Runnable接口的比较
 
-1.  Thread类本身也是实现了Runnable接口 `public class Thread implements Runnable {}`两者都重写 run() 方法，用于实现多线程
-2.  由于Java是单继承的，因此继承Thread类有局限性，而实现Runnable类可以进行多实现，因此Runnable更适合复杂的开发
-3.  实现Runnable接口的方式，避免了单继承的局限性，并且可以使多个线程对象共享一个Runnable实现类（线程任务类）对象，从而方便在多线程任务执行时共享数据。
+1.  由于Java“单继承，多实现”的特性，Runnable接⼝使⽤起来⽐Thread更灵活。
+2.  Runnable接⼝出现更符合⾯向对象，将线程单独进⾏对象的封装。
+3.  Runnable接⼝出现，降低了线程对象和线程任务的耦合性。
+4.  如果使⽤线程时不需要使⽤Thread类的诸多⽅法，显然使⽤Runnable接⼝更为轻量。
+
+>   优先使⽤“实现 Runnable 接口” 这种⽅式来⾃定义线程类。
+
+### 3、实现Callable接口
 
 
 

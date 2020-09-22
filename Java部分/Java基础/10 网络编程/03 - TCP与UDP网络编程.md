@@ -1,3 +1,5 @@
+
+
 # TCP与UDP网络编程
 
 Java早期提供的API支持TCP 与 UDP网络编程
@@ -298,6 +300,128 @@ public static void main(String[] args) throws IOException, InterruptedException 
 >   如果服务器在循环体内建立连接，那么需要使连接在循环体内（一般为末尾处）关闭。这相当于每次通信建立一次连接，开销大。
 >
 >   如果服务端与客户端一次只建立一个连接，获取一次输入/输出通道，若要达到循环通信的效果，则需要在循环体外建立一次连接，获取一次输出/输入通道，且使输出通道在循环体末尾使用 `flush()` 来刷新数据。
+
+**循环发送消息改进：双向循环发送（即时通讯）**
+
+```java
+// 服务器
+public class Server {
+
+    public static void main(String[] args) throws IOException {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("服务器启动中。。。");
+        ServerSocket serverSocket = new ServerSocket(5782);
+
+        // 建立连接
+        Socket accept = serverSocket.accept();
+
+        // 从连接获取输入流
+        InputStream acceptInputStream = accept.getInputStream();
+
+        // 从连接获取输入流
+        OutputStream acceptOutputStream = accept.getOutputStream();
+
+        // 启动两个线程，一个接收消息，一个输出消息
+        new InputStreamThread(acceptInputStream).start();
+        new OutputStreamThread(acceptOutputStream, sc).start();
+
+        // 模拟其他代码继续执行
+        while (true) {
+            // 执行其他代码ing...
+        }
+    }
+}
+
+// 客户端
+public class Client {
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("客户端启动中。。。");
+
+        // 初始化Socket，同时建立连接
+        Socket socket = new Socket("127.0.0.1", 5782);
+
+        // 从Socket连接获取输出流
+        OutputStream socketOutputStream = socket.getOutputStream();
+
+        // 从连接获取输入流
+        InputStream socketInputStream = socket.getInputStream();
+
+        // 启动两个线程，一个接收消息，一个输出消息
+        new InputStreamThread(socketInputStream).start();
+        new OutputStreamThread(socketOutputStream, sc).start();
+
+        // 模拟其他代码继续执行
+        while (true) {
+            // 执行其他代码ing...
+        }
+    }
+}
+
+// 其他输入与输出线程类
+class InputStreamThread extends Thread {
+
+    InputStream inputStream = null;
+
+    public InputStreamThread(InputStream inputStream) {
+        this.inputStream = inputStream;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                // 循环接收消息
+                int len = 0;
+                byte[] bytes = new byte[1024];
+                while ((len = inputStream.read(bytes)) != -1) {
+                    System.out.println(new String(bytes, 0, len));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+class OutputStreamThread extends Thread {
+
+    OutputStream outputStream = null;
+
+    Scanner sc;
+
+    public OutputStreamThread(OutputStream outputStream) {
+        this.outputStream = outputStream;
+    }
+
+    public OutputStreamThread(OutputStream outputStream, Scanner sc) {
+        this.outputStream = outputStream;
+        this.sc = sc;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                // 循环输出消息
+                String s = sc.nextLine();
+                outputStream.write(s.getBytes());
+                outputStream.flush();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+结果：绿色代表自己的输入
+
+![image-20200921124923384](_images/image-20200921124923384.png)
 
 
 
