@@ -10,18 +10,32 @@
 
 ##### 父类获取子类Class 对象类型的方法
 
+子类继承的基类的形式：
+
+![image-20200927084815406](_images/image-20200927084815406.png)
+
 ```java
+// 使用泛型占位符来确定clazz的类型（子类继承时指定）
 private Class<T> clazz;
-DAO(){
+// 使用代码块，在子类实例化时进行调用（也可以放在构造器中）
+{
+    // 1. 获取带泛型的父类
     Type superClass = getClass().getGenericSuperclass();
     if( superClass instanceof ParameterizedType){
+        
+        // 2. 若父类带泛型，则获取泛型的参数化类型（强转）
         ParameterizedType parameterizedType = (ParameterizedType) superClass;
+        
+        // 3. 获取实际参数列表（数组形式）
         Type[] Arguments = parameterizedType.getActualTypeArguments();
         if(Arguments!=null && Arguments.length!=0){
             if(Arguments[0] instanceof Class){
+                
+                // 4. 将实际类型强转为Class类型
                 clazz = (Class<T>)Arguments[0];
             }
         }
+
     }
 }    
 ```
@@ -30,20 +44,20 @@ DAO(){
 
 ```java
 public abstract class BaseDAO<T> {
-    
+
     private Class<T> clazz = null;
-    
+
     {   
-        //获取当前BaseDAO的子类继承的父类中的泛型
+        //获取当前BaseDAO的子类继承的父类中的泛型(这里的this实际上是子类对象)
         Type genericSuperclass = this.getClass().getGenericSuperclass();
         ParameterizedType paramType = (ParameterizedType) genericSuperclass;
-        
+
         Type[] typeArguments = paramType.getActualTypeArguments();//获取了父类的泛型参数
         clazz = (Class<T>) typeArguments[0];//泛型的第一个参数
     }
-    
-    
-    // 通用的增删改操作---version 2.0 （考虑上事务
+
+
+    // 通用的增删改操作---version 2.0 (考虑上事务)
     public int update(Connection conn, String sql, Object... args) {// sql中占位符的个数与可变形参的长度相同！
         PreparedStatement ps = null;
         try {
@@ -65,6 +79,7 @@ public abstract class BaseDAO<T> {
         return 0;
 
     }
+
 
     // 通用的查询操作，用于返回数据表中的一条记录（version 2.0：考虑上事务
     public T getInstance(Connection conn, String sql, Object... args) {
@@ -105,12 +120,11 @@ public abstract class BaseDAO<T> {
             e.printStackTrace();
         } finally {
             JdbcUtils.closeResource(null, ps, rs);
-
         }
-
         return null;
     }
-    
+
+
     // 通用的查询操作，用于返回数据表中的多条记录构成的集合（version 2.0：考虑上事务
     public List<T> getForList(Connection conn, String sql, Object... args) {
         PreparedStatement ps = null;
@@ -158,8 +172,9 @@ public abstract class BaseDAO<T> {
 
         return null;
     }
+
     
-    //用于查询特殊值的通用的方法
+    //用于查询单一值的方法
     public <E> E getValue(Connection conn,String sql,Object...args){
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -167,9 +182,8 @@ public abstract class BaseDAO<T> {
             ps = conn.prepareStatement(sql);
             for(int i = 0;i < args.length;i++){
                 ps.setObject(i + 1, args[i]);
-                
             }
-            
+
             rs = ps.executeQuery();
             if(rs.next()){
                 return (E) rs.getObject(1);
@@ -181,5 +195,51 @@ public abstract class BaseDAO<T> {
         }
         return null;
     }   
+
+    
+    /**
+   	 * 适用于没有实体类与结果集相对应，解决方法如下：
+	 * 通过向 Map 中添加键值对（字段-->key，字段的值-->map的value），list中添加每一行记录来动态获取数据
+	 * @param sql
+	 * @param args
+	 * @return
+	 */
+    public List<Map<String, Object>> getCommonResult(String sql, Object... args) {
+        Connection connection = JdbcUtils.getConnection();
+
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        ArrayList<Map<String, Object>> list = new ArrayList<>();
+        HashMap<String, Object> map = null;
+        try {
+            ps = connection.prepareStatement(sql);
+
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            
+            rs = ps.executeQuery();
+
+            ResultSetMetaData md = rs.getMetaData();
+
+            while (rs.next()) {
+                map = new HashMap<>();
+                for (int i = 0; i < md.getColumnCount(); i++) {
+                    String label = md.getColumnLabel(i + 1);
+                    Object value = rs.getObject(i + 1);
+                    // 将每个字段的键值对放入map
+                    map.put(label, value);
+                }
+                // 将每条记录放入List
+                list.add(map);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        } finally {
+
+            JdbcUtils.closeResource(connection, ps, rs);
+        }
+        return list;
+    }
 }
 ```

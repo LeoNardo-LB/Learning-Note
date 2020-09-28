@@ -343,8 +343,8 @@ mysql>source d:/test.sql;
 4、范围
 
 ```mysql
-区间范围：between x  and  y
-	    not between x  and  y
+区间范围：between x  and  y		# 在[x,y]中
+	    not between x  and  y	# 不在[x,y]中
 集合范围：in (x,x,x)
 	    not  in(x,x,x)
 ```
@@ -376,6 +376,8 @@ xx is null
 xx is not null
 xx <=> null
 ```
+
+#### 案例演示
 
 ```sql
 /*一、运算符
@@ -439,6 +441,7 @@ select * from t_employee where !(gender = '女');
 #即查询薪资大于10000的女的或薪资低于10000的男的
 select * from t_employee where salary>10000 ^ gender ='男';
 select * from t_employee where salary>10000 xor gender ='男';
+
 /*
 4、范围
 （1）区间范围：
@@ -455,6 +458,7 @@ select * from t_employee where salary >= 15000 and salary <=20000;
 #查询薪资在9000,10000,12000
 select * from t_employee where salary in(9000,10000,12000);
 select * from t_employee where salary =9000 || salary =10000 || salary =12000;
+
  /*
 5、模糊查询
 like '%x%' x代表确定的字符 %表示不确定的0~n个字符

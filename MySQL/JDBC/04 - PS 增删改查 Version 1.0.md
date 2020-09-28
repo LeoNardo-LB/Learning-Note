@@ -181,3 +181,58 @@ public <T> List<T> getForList(Class<T> clazz,String sql, Object... args){
 }
 ```
 
+##### 获取自增长键值
+
+```java
+/*
+ * 我们通过JDBC往数据库的表格中添加一条记录，其中有一个字段是自增的，那么在JDBC这边怎么在添加之后直接获取到这个自增的值
+ * PreparedStatement是Statement的子接口。
+ * Statement接口中有一些常量值：
+ * （1）Statement.RETURN_GENERATED_KEYS
+ * 
+ * 要先添加后获取到自增的key值：
+ * （1）PreparedStatement pst = conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+ * （2）添加sql执行完成后,通过PreparedStatement的对象调用getGeneratedKeys()方法来获取自增长键值，遍历结果集
+ * 		ResultSet rs = pst.getGeneratedKeys();
+ */
+public class TestAutoIncrement {
+    public static void main(String[] args) throws Exception{
+        //1、注册驱动
+        Class.forName("com.mysql.jdbc.Driver");
+
+        //2、获取连接
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "123456");
+
+        //3、执行sql
+        String sql = "insert into t_department values(null,?,?)";
+        /*
+		 * 这里在创建PreparedStatement对象时，传入第二个参数的作用，就是告知服务器端
+		 * 当执行完sql后，把自增的key值返回来。
+		 */
+        PreparedStatement pst = conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+
+        //设置？的值
+        pst.setObject(1, "测试部");
+        pst.setObject(2, "测试项目数据");
+
+        //执行sql
+        int len = pst.executeUpdate();//返回影响的记录数
+        if(len>0){
+            //从pst中获取到服务器端返回的键值
+            ResultSet rs = pst.getGeneratedKeys();
+            //因为这里的key值可能多个，因为insert语句可以同时添加多行，所以用ResultSet封装
+            //这里因为只添加一条，所以用if判断
+            if(rs.next()){
+                Object key = rs.getObject(1);
+                System.out.println("自增的key值did =" + key);
+            }
+        }
+
+        //4、关闭
+        pst.close();
+        conn.close();
+    }
+}
+```
+
+## 
