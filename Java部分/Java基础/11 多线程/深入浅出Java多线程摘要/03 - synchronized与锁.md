@@ -1,4 +1,4 @@
-# synchronized 锁
+# synchronized与锁
 
 **Java多线程的锁都是基于对象的**，Java中的每一个对象都可以作为一个锁。我们常听到的**类锁**其实也是对象锁。Java类只有一个Class对象（可以有多个实例对象，多个实例共享这个Class对象），而Class对象也是特殊的Java对象。所以我们常说的类锁，其实就是Class对象的锁。
 
