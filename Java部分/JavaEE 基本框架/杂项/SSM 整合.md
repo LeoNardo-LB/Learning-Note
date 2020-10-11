@@ -25,11 +25,215 @@
 </web-app>
 ```
 
-#### `web.xml`是整个项目的核心配置文件，也可以理解为Web程序访问的入口，非常重要
+**`web.xml`是整个项目的核心配置文件，也可以理解为Web程序访问的入口，非常重要**
 
 在`servlet3.0`及后续版本中，此配置文件可省略，采用注解方式替代，本课程暂不涉及。
 
-在项目的`pom.xml`文件中增加依赖关系：点击详细
+#### 项目依赖
+
+在项目的`pom.xml`文件中增加依赖关系
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>2.5</version>
+    </dependency>
+    <dependency>
+        <groupId>javax.servlet.jsp</groupId>
+        <artifactId>jsp-api</artifactId>
+        <version>2.1.3-b06</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-jdbc</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-orm</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-webmvc</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-tx</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid</artifactId>
+        <version>1.1.22</version>
+    </dependency>
+    <dependency>
+        <groupId>cglib</groupId>
+        <artifactId>cglib</artifactId>
+        <version>2.2</version>
+    </dependency>
+    <dependency>
+        <groupId>org.aspectj</groupId>
+        <artifactId>aspectjweaver</artifactId>
+        <version>1.6.8</version>
+    </dependency>
+
+    <!-- Spring整合MyBatis -->
+    <!-- MyBatis中延迟加载需要使用Cglib -->
+    <!-- https://mvnrepository.com/artifact/org.mybatis/mybatis -->
+    <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis</artifactId>
+        <version>3.2.8</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis-spring</artifactId>
+        <version>1.2.2</version>
+    </dependency>
+
+    <!-- 控制日志输出：结合log4j -->
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.7</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>1.7.7</version>
+    </dependency>
+
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>5.1.37</version>
+    </dependency>
+    <dependency>
+        <groupId>jstl</groupId>
+        <artifactId>jstl</artifactId>
+        <version>1.2</version>
+    </dependency>
+
+    <!-- ********其他****************************** -->
+
+    <!-- Ehcache二级缓存 -->
+    <dependency>
+        <groupId>net.sf.ehcache</groupId>
+        <artifactId>ehcache</artifactId>
+        <version>1.6.2</version>
+    </dependency>
+
+
+    <!-- 石英调度 - 开始 -->
+    <dependency>
+        <groupId>org.quartz-scheduler</groupId>
+        <artifactId>quartz</artifactId>
+        <version>1.8.5</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context-support</artifactId>
+        <version>4.0.0.RELEASE</version>
+    </dependency>
+    <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>3.1</version>
+    </dependency>
+    <!-- 石英调度 - 结束 -->
+
+    <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>1.9.2</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>3.9</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.jfree</groupId>
+        <artifactId>jfreechart</artifactId>
+        <version>1.0.19</version>
+    </dependency>
+
+    <dependency>
+        <groupId>commons-fileupload</groupId>
+        <artifactId>commons-fileupload</artifactId>
+        <version>1.3.1</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.freemarker</groupId>
+        <artifactId>freemarker</artifactId>
+        <version>2.3.19</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.activiti</groupId>
+        <artifactId>activiti-engine</artifactId>
+        <version>5.15.1</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.activiti</groupId>
+        <artifactId>activiti-spring</artifactId>
+        <version>5.15.1</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-email</artifactId>
+        <version>1.3.1</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.activiti</groupId>
+        <artifactId>activiti-explorer</artifactId>
+        <version>5.15.1</version>
+        <exclusions>
+            <exclusion>
+                <artifactId>groovy-all</artifactId>
+                <groupId>org.codehaus.groovy</groupId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+        <scope>compile</scope>
+    </dependency>
+</dependencies>
+```
 
 
 
@@ -44,13 +248,15 @@
 ```xml
 <web-app>
     ...
-    <context-param>
-        <param-name>contextConfigLocation</param-name>
-        <param-value>classpath*:spring/spring-*.xml</param-value>
-    </context-param>
+    <!-- 设置Spring启动加载的监听器（加载配置文件） -->
     <listener>
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>
+    <!-- 设置Spring配置文件位置 -->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath*:spring/spring-config.xml</param-value>
+    </context-param>
     ...
 </web-app>
 ```
@@ -61,18 +267,24 @@ Spring环境构建时需要读取web应用的初始化参数`contextConfigLocati
 
 在项目`src/main/resources`目录中增加`spring`文件夹，并在其中增加`spring-context.xml`配置文件。
 
+配置扫描的包，子标签为不会被扫描到的类
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:aop="http://www.springframework.org/schema/aop"
-       xsi:schemaLocation="
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="
         http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
 </beans>
 ```
 
@@ -81,7 +293,8 @@ Spring环境构建时需要读取web应用的初始化参数`contextConfigLocati
 ```xml
 <beans>
     ...
-    <context:component-scan base-package="com.atguigu.*" >
+    <context:property-placeholder location="classpath:dbConfig.properties"></context:property-placeholder>
+    <context:component-scan base-package="com.**.*">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
     ...
@@ -106,22 +319,43 @@ Spring环境构建时需要读取web应用的初始化参数`contextConfigLocati
 
 ```xml
 <web-app>
-...
+    ...
+    <!-- 前端控制器 -->
     <servlet>
         <servlet-name>springmvc</servlet-name>
         <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
         <init-param>
+            <!-- 指定springmvc的配置文件位置 -->
             <param-name>contextConfigLocation</param-name>
-            <param-value>classpath:spring/springmvc-context.xml</param-value>
+            <param-value>classpath:spring/springmvc-config.xml</param-value>
         </init-param>
+        <!-- 设置声明周期为 启动时启动 -->
         <load-on-startup>1</load-on-startup>
     </servlet>
-    
     <servlet-mapping>
         <servlet-name>springmvc</servlet-name>
         <url-pattern>/</url-pattern>
     </servlet-mapping>
-...
+
+    <!-- Spring提供的字符编码过滤器 -->
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <!-- 当指定Servlet拦截到请求时，会调用该过滤器 -->
+        <servlet-name>springmvc</servlet-name>
+    </filter-mapping>
+    ...
 </web-app>
 ```
 
@@ -147,10 +381,12 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 
 `SpringMVC`框架的核心是处理数据的流转，所以需要在`springmvc-context.xml`配置文件中增加控制器对象（`Controller`）扫描的相关配置。扫描后由`SpringMVC`框架进行管理和组合。
 
+配置扫描的包，子标签表示只扫描包含了该注解类型的类
+
 ```xml
 <beans>
     ...
-    <context:component-scan base-package="com.atguigu.*" use-default-filters="false" >
+    <context:component-scan base-package="com.**.*" use-default-filters="false">
         <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
     ...
@@ -159,9 +395,16 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 
 #### 静态资源如何不被`SpringMVC`框架进行拦截
 
-在配置文件中增加`<mvc:default-servlet-handler/>`, `<mvc:annotation-driven />`即可
+在配置文件中增加如下配置
+
+```xml
+<mvc:default-servlet-handler/>
+<mvc:annotation-driven/>
+```
 
 在实际的项目中静态资源不会和动态资源放在一起，也就意味着不会放置在服务器中，所以这些配置可以省略。
+
+#### 配置视图解析器
 
 如果`SpringMVC`框架数据处理为页面跳转，那么需要配置相应的视图解析器`ViewResolver`。
 
@@ -177,7 +420,7 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 </beans>
 ```
 
-#### 如果有多个视图解析器怎么办？
+**如果有多个视图解析器怎么办？**
 
 `SpringMVC`框架中允许存在多个视图解析器，框架会按照配置声明顺序，依次进行解析。
 
@@ -214,8 +457,8 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 ```xml
 <beans>
     ...
-    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" p:defaultEncoding="UTF-8" >
-        <property name="maxUploadSize" value="2097152"/>
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="1024"/>
         <property name="resolveLazily" value="true"/>
     </bean>
     ...
@@ -233,39 +476,43 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 ```xml
 <beans>
     ...
-    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" >
-        <property name="configLocation" value="classpath:mybatis/config.xml" />
-        <property name="dataSource" ref="dataSource" />
-        <property name="mapperLocations" >
-            <list>
-                <value>classpath*:mybatis/mapper-*.xml</value>
-            </list>
-        </property>
+    <!-- 将数据源交给 SqlSessionFactoryBean 管理 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 配置数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- mybatis 主配置文件 -->
+        <property name="configLocation" value="classpath:mybatis/config.xml"/>
+        <!-- mybatis的mapper -->
+        <property name="mapperLocations" value="classpath:mybatis/mappers/*.xml"/>
+    
     </bean>
-    ...
-    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer" >
-        <property name="basePackage" value="com.atguigu.atcrowdfunding.**.dao" />
+    
+    <!-- dao层映射扫描的包 -->
+    <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.**.dao"/>
     </bean>
     ...
 </beans>
 ```
 
-既然需要和数据库进行关联，那么`Mybatis`核心对象就需要依赖于数据库连接池（`C3P0`）,所以在`Spring`配置文件中增加相应的配置。
+既然需要和数据库进行关联，那么`Mybatis`核心对象就需要依赖于数据库连接池（druid）,所以在`Spring`配置文件中增加相应的配置。
+
+数据库配置文件使用 `<context:property-placeholder location="classpath:XXX.properties"></context:property-placeholder>` 引入即可
 
 ```xml
 <beans>
     ...
-    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" >
-        <property name="driverClass" value="com.mysql.jdbc.Driver"/>
-        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/atcrowdfunding?rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=utf8"/>
-        <property name="user" value="root"/>
-        <property name="password" value="root"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init">
+        <property name="driverClassName" value="${db.driverClass}"/>
+        <property name="url" value="${db.url}"/>
+        <property name="username" value="${db.username}"/>
+        <property name="password" value="${db.password}"/>
     </bean>
     ...
 </beans>
 ```
 
-#### MyBatis 核心配置
+#### MyBatis 主配置文件
 
 集成`Mybatis`框架时同时还需要增加核心配置文件`mybatis/config.xml`。
 
@@ -306,9 +553,9 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
             <tx:method name="*" propagation="REQUIRED" isolation="DEFAULT" rollback-for="java.lang.Exception" />
             <tx:method name="query*" read-only="true" />
         </tx:attributes>
-    </tx:advice>    
+    </tx:advice>
     <aop:config>
-        <aop:advisor advice-ref="transactionAdvice" pointcut="execution(* com.atguigu..*Service.*(..))"/>
+        <aop:advisor advice-ref="transactionAdvice" pointcut="execution(* com..*Service.*(..))"/>
     </aop:config>
     ...
 </beans>

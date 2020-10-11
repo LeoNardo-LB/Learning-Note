@@ -94,17 +94,15 @@ $ 是jQuery 的核心函数，能完成jQuery 的很多功能。$()就是调用$
 
 **Query 对象的本质**
 
-jQuery 对象是dom 对象的数组+ jQuery 提供的一系列功能函数。
+-   jQuery 对象是dom 对象的数组+ jQuery 提供的一系列功能函数。
 
-jQuery 对象和Dom 对象不能使用彼此的属性和方法
+-   jQuery 对象和Dom 对象不能使用彼此的属性和方法
+
 
 ### Dom 对象和jQuery 对象互转
 
-**dom 对象转化为jQuery 对象（*重点）**
-	$(DOM对象)就可以转换成为jQuery对象
-
-**jQuery 对象转为dom 对象（*重点）**
-	jQuery 对象[下标]取出相应的DOM对象
+-   dom 对象转化为jQuery 对象：`$(dom)`
+-   jQuery 对象转为dom 对象：`$Obj[0]`
 
 **类比如下关系**
 
@@ -146,7 +144,7 @@ class Dom{
 | ------------------------------------ | ------------------------------------------- |
 | ancestor descendant  后代选择器      | 在给定的祖先元素下匹配所有的后代元素        |
 | parent > child  子元素选择器         | 在给定的父元素下匹配所有的子元素            |
-| prev + next 相邻元素选择器           | 匹配所有紧接在prev 元素后的next  元素       |
+| prev + next 相邻元素选择器           | 匹配所有紧接在prev 元素后的 next  元素      |
 | prev ~ sibings  之后的兄弟元素选择器 | 匹配prev  元素之后的所有siblings(兄弟) 元素 |
 
 #### 基本过滤器
@@ -291,3 +289,221 @@ class Dom{
 | $.isArray(obj)        | 判断是否是数组                    |
 | $.isFunction(obj)     | 判断是否是函数                    |
 | $.parseJSON(json)     | 解析json字符串，转换为js对象/数组 |
+
+
+
+## Dom元素增删改
+
+**增加**
+
+| jQuery对象方法名          | 方法描述           |
+| ------------------------- | ------------------ |
+| append() / appendTo()     | 插入后部(内部添加) |
+| prepend() /  preppendTo() | 插入前部(内部添加) |
+| before()                  | 插到前面(外部添加) |
+| after()                   | 插到后面(外部添加) |
+
+**删除**
+
+| jQuery对象方法名 | 方法描述                 |
+| ---------------- | ------------------------ |
+| remove()         | 将自己及内部的孩子都删除 |
+| empty()          | 掏空(自己还在)           |
+
+**更新**
+
+| jQuery对象方法名 | 方法描述               |
+| ---------------- | ---------------------- |
+| replaceWith()    | 用一段HTML语句替换     |
+| replaceAll()     | 用页面中的某个元素替换 |
+
+
+
+## CSS样式操作
+
+**style样式**
+
+| jQuery对象方法名 | 方法描述               |
+| ----------------------- | ---------------------- |
+|css(styleName)        | 根据样式名得到对应的值 |
+|css(styleName, value) | 设置一个样式           |
+|css({多个样式对})     | 设置多个样式           |
+
+**位置坐标**
+
+| jQuery对象方法名 | 方法描述               |
+|------------------------- | ----------------------------------- |
+|offset() / offset({left: 100, top: 200})                 | 读/写当前元素坐标(原点是页面左上角) |
+|position()               | 读当前元素坐标(原点是父元素左上角)  |
+|scrollTop()/scrollLeft() | 读/写元素/页面的滚动条坐标          |
+
+**尺寸**
+
+| jQuery对象方法名 | 方法描述               |
+|-------------------------- | ------------------------ |
+|width()/height()           | width/height             |
+|innerWidth()/innerHeight() | width + padding          |
+|outerWidth()/outerHeight() | width + padding + border |
+
+
+
+## jQuery 基本动画
+
+| jQuery对象方法名称 | 方法说明                   |
+| ------------------ | -------------------------- |
+| show()             | 将隐藏的元素显示           |
+| hide()             | 将可见的元素隐藏。         |
+| toggle()           | 可见就隐藏，不可见就显示。 |
+
+以上动画方法都可以添加参数。
+
+1.  第一个参数是动画执行的时长，以毫秒为单位
+2.  第二个参数是动画的回调函数(动画完成后自动调用的函数)
+
+**淡入淡出动画**
+
+| jQuery对象方法名称 | 方法说明                                                     |
+| ------------------ | ------------------------------------------------------------ |
+| fadeIn()           | 淡入（慢慢可见）                                             |
+| fadeOut()          | 淡出（慢慢消失）                                             |
+| fadeTo()           | 在指定时长内慢慢的将透明度修改到指定的值。0  透明，1 完成可见，0.5 半透明 |
+| fadeToggle()       | 淡入/淡出切换                                                |
+
+
+
+## jQuery 事件
+
+**常用API**
+
+| jQuery对象方法名称 | 方法说明                                                     |
+| ------------------ | ------------------------------------------------------------ |
+| click()            | 它可以绑定单击事件，以及触发单击事件                         |
+| mouseover()        | 鼠标移入事件                                                 |
+| mouseout()         | 鼠标移出事件                                                 |
+| bind()             | 可以给元素一次性绑定一个或多个事件。                         |
+| unbind()           | 跟bind 方法相反的操作，解除事件的绑定                        |
+| one()              | 使用上跟bind 一样。但是one  方法绑定的事件只会响应一次。     |
+| live()             | 也是用来绑定事件。它可以用来绑定选择器匹配的所有元素的事件。哪怕这个元素是后面动态创建出来的也有效 |
+
+**使用格式**
+
+```js
+jQuery对象.eventName(回调函数)
+
+jQuery对象.eventName(function(){
+    
+})
+
+jQuery对象.eventName(function(event){
+    
+})
+```
+
+**代码示例**
+
+```js
+// click
+$(".head").click(function () {
+    $(".content").toggle();
+})
+
+// mouseover,mouseout
+$(".head").mouseover(function () {
+    $(".content").show();
+})
+$(".head").mouseout(function () {
+    $(".content").hide();
+})
+
+// mousemove
+$(".head").mousemove(function () {
+    $(".content").toggle();
+})
+
+// one
+$(".head").one("click", function () {
+    $(".content").show();
+})
+$(".head").mouseout(function () {
+    $(".content").hide();
+})
+```
+
+### 事件冒泡
+
+冒泡就是事件的向上传导，子元素的事件被触发，父元素的响应事件也会触发
+
+```html
+<body>
+    <div id="content">
+        外层div元素
+        <span>内层span元素</span>
+        外层div元素
+    </div>
+
+    <div id="msg"></div>
+
+    <br><br>
+    <a href="http://www.hao123.com">WWW.HAO123.COM</a>
+</body>
+<script type="text/javascript">
+    $(function () {
+        $("span").click(function () {
+            alert("内层元素（子元素）")
+            // 加入 false  即可终止事件冒泡
+            return false;
+        })
+
+        $('#content').click(function () {
+            alert("外层元素（父元素）")
+        })
+
+
+        $("body").click(function () {
+            alert("我是body元素")
+        })
+
+    })
+</script>
+```
+
+### 事件对象
+
+每次Dom对象响应js的事件时，都会有一个对象，**包装了当前事件发生的所有信息**，可以通过当前事件回调函数的形参来传入时间都西昂
+
+```js
+jQuery对象.eventName(function(event){
+    // event 的操作
+})
+```
+
+**代码示例**
+
+```html
+<body>
+    
+    <div id="areaDiv"></div>
+    <div id="showMsg"></div>
+
+</body>
+<script type="text/javascript">
+    
+    //1.原生javascript获取 事件对象
+    //2.JQuery代码获取 事件对象
+    //3.使用bind同时对多个事件绑定同一个函数。怎么获取当前操作是什么事件。
+    
+    window.onload = function () {
+        document.getElementById("areaDiv").onclick = function (event) {
+            alert("当前事件的操作为：" + event.type)
+        }
+    }
+    
+    $(function () {
+        $("#showMsg").bind("click mouseout", function (event) {
+            alert("当前事件的操作为：" + event.type);
+        })
+    })
+
+</script>
+```
+
