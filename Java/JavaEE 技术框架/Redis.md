@@ -315,7 +315,9 @@ Redis的数据类型可以分为5种，分别为 String，List，Set，ZSet与Ha
 
 ###  List类型
 
-list 列表 相当于java中list 集合  特点  元素有序  且 可以重复
+list 列表 相当于java中list 集合。
+
+特点：元素有序且可以重复。
 
 #### 内存存储模型
 
@@ -1061,3 +1063,565 @@ c.example.springbootmybatis.dao.UserDao  : Cache Hit Ratio [com.example.springbo
 
 分析：可以发现对数据库只进行了一次查询操作，而第二次查询调用缓存（命中率：1/2 = 0.5）
 
+### 改进1：使用缓存共享
+
+在目前的整合中，对应关系如下：
+
+| Java中                 | Redis中的Hash类型 |
+| ---------------------- | ----------------- |
+| 一个 XXXDao            | key               |
+| putObject 传入的 key   | field             |
+| putObject 传入的 value | value             |
+
+#### 存在的问题
+
+由于一个Dao 对应一个 Redis 中的 key，若存在一对一，一对多查询，那么在单个pojo中势必存在如下关系：
+
+```java
+// 一对多关系：一个人由多个账号的关系
+Class Human{
+    private String name;
+    // ...
+    private List<Account> accounts;
+}
+```
+
+如果使用HumanDao多表查询Humen的数据与Account的数据（使用Human对象存储信息），那么在Redis中使用Hash类型存储该数据，就会以HumanDao的全类名会作为其Key。那么当Account的信息发生了变动，Redis按照目前清除缓存的方式 （`redisTemplate.delete(id)`）无法清除Human的缓存，会出现Redis缓存数据与数据库数据不匹配的情况。
+
+#### 解决方法：开启Mybatis的缓存共享
+
+在一处映射文件中，使用 `<cache-ref namespace="开启缓存的映射文件"/>` 来开启共享缓存。
+
+例如：A开启了缓存，B引用A  <==> B开启了缓存，A引用B
+
+共享缓存作用：将本类的缓存放入cache-ref所指的缓存中。就是说，若A开启了缓存，B的cache-ref引用了A，则A与B的缓存都放入A的命名空间作为key的缓存中。
+
+![image-20201021235915872](_images/image-20201021235915872.png)
+
+共享缓存原理：不用本类的命名空间作为id传入Cache实现类，而是将 cache-ref 所指的命名空间作为id传入本类的Cache实现类，也就是说，一个命名空间对应多个实现类。
+
+**代码示例**
+
+在AccountMapper中开启了 Cache
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springbootmybatis.dao.AccountDao">
+    
+    <!-- 开启了缓存 -->
+    <cache type="com.example.springbootmybatis.cache.RedisCache"/>
+    
+</mapper>
+```
+
+在UserMapper中引用AccountMapper的命名空间，实现共享缓存
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springbootmybatis.dao.UserDao">
+    
+    <!-- 引用命名空间 -->
+    <cache-ref namespace="com.example.springbootmybatis.dao.AccountDao"/>
+    
+</mapper>
+```
+
+### （未完成）改进2：使用MD5加密缩短 HashKey 的长度
+
+原始的hashKey：
+
+```
+904073892:6612308477:com.example.springbootmybatis.dao.AccountDao.selectAccountById:0:2147483647:select * from t_account where id = ?:1:SqlSessionFactoryBean
+```
+
+非常长！！
+
+使用Spring框架自带的 MD5 加密工具类来缩短原始 HashKey 的长度，经过MD5加密处理之后，任何数据都会编程32位，16进制的字符串，可以有效缩短原始HashKey的长度。
+
+API：`public static byte[] md5Digest(byte[] bytes)` 传入byte数组，返回加密之后的字符串。
+
+#### 用法
+
+1.  在做缓存时，让hashkey使用MD5加密算法，然后将加密后的key与value存入Redis
+
+2.  在读取数据时，先给hashkey加密，然后基于加密后的key取数据。
+
+
+
+## 主从复制
+
+主从复制架构仅仅用来解决数据的冗余备份，从节点仅仅用来同步数据。
+
+主：Master，用来读与修改数据。
+
+从：replica（5.0之前为slave），主动同步Master的数据，可以读数据，默认不能被修改（通过配置可修改）
+
+**无法解决: 1.master节点出现故障的自动故障转移**
+
+### 主从复制架构图
+
+![image-20200627201722700](_images/image-20200627201722700.png)
+
+### 搭建主从复制
+
+准备3台机器，搭建并测试主从复制
+
+**Master**：对Master没有特殊需求，只要开放端口即可。
+
+	port 6379
+	bind 0.0.0.0
+**slave**（Redis5.0之后更名为Replica）：需要额外配置一个参数： `replicaof` ，来指定需要同步的Master
+
+```bash
+port 6381
+bind 0.0.0.0
+replicaof <masterip> <masterport>
+```
+实验：分别对Master与Replica进行写与读操作
+
+Master：![image-20201022143454280](_images/image-20201022143454280.png)
+
+Replica：![image-20201022143508556](_images/image-20201022143508556.png)
+
+
+
+## 哨兵机制
+
+Sentinel（哨兵）是Redis 的高可用性解决方案：由一个或多个Sentinel 实例 组成的Sentinel 系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器进入下线状态时，自动将下线主服务器属下的某个从服务器升级为新的主服务器（根据某种规则推举出一个合适的从服务器）。简单的说哨兵就是带有**自动故障转移功能的主从架构**。
+
+**无法解决: 1.单节点并发压力问题   2.单节点内存和磁盘物理上限**
+
+### 哨兵架构原理
+
+哨兵机制是建立在主从复制架构之上的，哨兵可以有多个。在启动哨兵服务之后，哨兵与Master、Replica通过心跳机制来建立联系，从而来监控Master与Replica的健康情况。
+
+![image-20200627204422750](_images/image-20200627204422750.png)
+
+哨兵会在一定间隔给Master与Replica服务器发送一个数据包。如果每发一个数据包，都可以得到一个回应，那么服务就是健康的。
+
+若没有收到回应，达到一定阈值，那么哨兵就认为Master有可能宕机了，那么哨兵会做如下操作：
+
+1.  通知Replica停止复制
+2.  为保证系统高可用，哨兵会在多个从服务器中选取新的Master服务器（投票机制）
+3.  选取完毕之后，让其他所有从节点开始连接新Master，形成新的主从复制关系。
+4.  若原Master恢复了，那么原Master会变成新Master的从节点
+
+### 哨兵架构的搭建
+
+1.  在Master对应redis.conf同目录下新建sentinel.conf文件，名字绝对不能错
+
+2.  配置哨兵，在sentinel.conf文件中填入内容：
+
+    ```bash
+    sentinel monitor <被监控的主从架构的名字（自己起名字）> <ip> <port> <1>
+    # 自己起的名字：可能日后有多个哨兵，名称用于区分不同哨兵与其架构
+    # ip：被监控的Master的ip
+    # port：被监控的Master的端口 
+    # 1：代表整个哨兵系统中哨兵的数量，是多哨兵监控Master是否健康检测的阈值，如果 哨兵认为当即的数量 多于 该数量/2，则会发起选举新Master的投票
+    ```
+
+    >   一条该语句对应一个被监控的主Master，可以有多个
+
+3.  启动哨兵服务
+
+    进入redis解压目录/src下，有一个文件叫做 `redis-sentinel` ，启动即可。（也可以指定配置文件启动）
+
+    ![image-20201022154657118](_images/image-20201022154657118.png)
+
+#### 测试
+
+1.  先启动主从架构![image-20201022155333640](_images/image-20201022155333640.png)
+
+2.  启动sentinel：src/redis-sentinel sentinel.conf
+
+    输出信息：
+
+    ```bash
+    2534:X 22 Oct 2020 15:52:54.888 # Sentinel ID is 83babc83a5bf4314c711702f04e69239b7c3001a
+    2534:X 22 Oct 2020 15:52:54.888 # +monitor master mysentinel 192.168.72.129 6379 quorum 1
+    2534:X 22 Oct 2020 15:52:54.889 * +slave slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:52:54.890 * +slave slave 192.168.72.129:6381 192.168.72.129 6381 @ mysentinel 192.168.72.129 6379
+    ```
+
+3.  测试 Master节点宕机（ctrl + c）
+
+    sentinel检测到Master节点宕机，开始重新选举
+
+    ```bash
+    2534:X 22 Oct 2020 15:55:24.289 # +sdown master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.289 # +odown master mysentinel 192.168.72.129 6379 #quorum 1/1
+    2534:X 22 Oct 2020 15:55:24.289 # +new-epoch 1
+    2534:X 22 Oct 2020 15:55:24.289 # +try-failover master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.290 # +vote-for-leader 83babc83a5bf4314c711702f04e69239b7c3001a 1
+    2534:X 22 Oct 2020 15:55:24.290 # +elected-leader master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.290 # +failover-state-select-slave master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.368 # +selected-slave slave 192.168.72.129:6381 192.168.72.129 6381 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.369 * +failover-state-send-slaveof-noone slave 192.168.72.129:6381 192.168.72.129 6381 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.432 * +failover-state-wait-promotion slave 192.168.72.129:6381 192.168.72.129 6381 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.599 # +promoted-slave slave 192.168.72.129:6381 192.168.72.129 6381 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.599 # +failover-state-reconf-slaves master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:24.689 * +slave-reconf-sent slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:25.607 * +slave-reconf-inprog slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:25.607 * +slave-reconf-done slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:25.691 # +failover-end master mysentinel 192.168.72.129 6379
+    2534:X 22 Oct 2020 15:55:25.691 # +switch-master mysentinel 192.168.72.129 6379 192.168.72.129 6381
+    2534:X 22 Oct 2020 15:55:25.691 * +slave slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6381
+    2534:X 22 Oct 2020 15:55:25.691 * +slave slave 192.168.72.129:6379 192.168.72.129 6379 @ mysentinel 192.168.72.129 6381
+    2534:X 22 Oct 2020 15:55:55.728 # +sdown slave 192.168.72.129:6379 192.168.72.129 6379 @ mysentinel 192.168.72.129 6381
+    ```
+
+    结果：6381节点被选举为Master节点。
+
+4.  重启原Master节点，sentinel输出如下：
+
+    ```bash
+    2534:X 22 Oct 2020 16:05:10.101 * +convert-to-slave slave 192.168.72.129:6379 192.168.72.129 6379 @ mysentinel 192.168.72.129 6381
+    ```
+
+    意为将6379（原master）转为slave了，同时redis客户端连接到原Master节点，发现不能修改数据了。
+
+    ![image-20201022160735247](_images/image-20201022160735247.png)
+
+### SpringBoot 关联哨兵
+
+前提：要开启哨兵机制之后才可关联
+
+**sentinel.conf的配置**
+
+```bash
+# 开启哨兵的远程连接
+bind 0.0.0.0
+```
+
+**application.properties的配置**
+
+```properties
+# master是使用哨兵监听的主从架构的名称
+spring.redis.sentinel.master=mymaster
+# 连接哨兵节点(ip:port)
+spring.redis.sentinel.nodes=192.168.202.206:26379[,ip:port,ip:port,...]
+```
+
+### 单哨兵的缺点
+
+单哨兵可能在网络波动或其他一些非正常因素的情况下没有接收到Master的心跳，误判Master已宕机。此时如果推选出了一个新的Master，就会发生脑裂现象（从节点不知道该连哪一个）
+
+
+
+## Redis 集群
+
+Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自动发现,支持slave-master选举和容错,支持在线分片（sharding shard）等特性。
+
+![img](_images/OIP.9_XXP3aod_o4znHbJal2sAHaHo)
+
+### 集群的细节
+
+- 所有的redis节点彼此互联（PING-PONG机制），内部使用二进制协议优化传输速度和带宽。
+- 节点的fail是通过集群中超过半数的节点检测失效时才生效。 
+- 客户端与redis节点直连，不需要中间proxy层。客户端不需要连接集群所有节点，连接集群中任何一个可用节点即可
+- redis-cluster把所有的物理节点（对外提供服务的节点）映射到[0-16383]slot上。cluster 负责维护node<=>slot<=>value
+
+### 集群原理
+
+![image-20200629165226329](_images/image-20200629165226329.png)
+
+**CRC16的算法特点**
+
+1.  集群模式下对所有Key进行CRC16算法，计算的值始终在 0~16383之间
+2.  客户端访问的物理节点是根据CRC16算法计算的值而定（通过重定向）。
+3.  同一个key经过CRC16计算后，结果始终一致。
+4.  对客户端不同的key进行计算时，计算的结果有可能一致
+
+### 搭建集群
+
+1.  环境准备：需要ruby脚本
+
+    ```bash
+    yum install ruby
+    ```
+
+2.  修改每个集群的配置文件（最小配置文件）
+
+    ```bash
+    port 7000	//修改端口
+    bind 0.0.0.0	//开启远程连接
+    daemonize yes	//后台运行模式
+    dir /目录路径	//指定数据文件存放位置，不同目录必须指定不同的位置，不然会丢失数据
+    cluster-enabled yes	//开启集群模式
+    cluster-config-file nodes-<port>.conf	//集群节点配置文件
+    cluster-node-timeout 5000	//集群节点超时时间
+    protected-mode no	//关闭保护模式
+    appendonly yes	//开启AOF持久化
+    
+    # 如果需要密码
+    requirepass xxx (设置redis访问密码)
+    masterauth xxx (设置集群节点间访问密码，跟上面一致)
+    ```
+
+3.  将每个服务器根据集群配置的文件启动集群
+
+4.  启动集群，输入以下指令：redis-cli --cluser create  host1:port1 ... hostN:portN --cluster-replicas <arg>  启动集群（arg为从节点个数）
+
+    ```bash
+    ./redis-cli --cluster create 192.168.72.129:7000 192.168.72.129:7001 192.168.72.129:7002 192.168.72.129:7003 192.168.72.129:7004 192.168.72.129:7005 --cluster-replicas 1
+    ```
+
+    说明：
+
+    ![image-20201023183223835](_images/image-20201023183223835.png)
+
+5.  启动途中，提示是否要保存集群配置，输入yes即可（输入no则取消创建）
+
+    ![image-20201023183313869](_images/image-20201023183313869.png)
+
+**集群创建成成功！**
+
+![image-20201023183411124](_images/image-20201023183411124.png)
+
+### 节点宕机测试
+
+使7000端口的节点宕机
+
+![image-20201023184736423](_images/image-20201023184736423.png)
+
+7000重新启动服务后，变成了从节点。
+
+![image-20201023184753312](_images/image-20201023184753312.png)
+
+### 集群命令
+
+以 `--cluster` 为前缀
+
+```bash
+create         host1:port1 ... hostN:portN   #创建集群
+               --cluster-replicas <arg>      #从节点个数
+check          host:port                     #检查集群
+               --cluster-search-multiple-owners #检查是否有槽同时被分配给了多个节点
+info           host:port                     #查看集群状态
+fix            host:port                     #修复集群
+               --cluster-search-multiple-owners #修复槽的重复分配问题
+reshard        host:port                     #指定集群的任意一节点进行迁移slot，重新分slots
+               --cluster-from <arg>          #需要从哪些源节点上迁移slot，可从多个源节点完成迁移，以逗号隔开，传递的是节点的node id，还可以直接传递--from all，这样源节点就是集群的所有节点，不传递该参数的话，则会在迁移过程中提示用户输入
+              --cluster-to <arg>            #slot需要迁移的目的节点的node id，目的节点只能填写一个，不传递该参数的话，则会在迁移过程中提示用户输入
+               --cluster-slots <arg>         #需要迁移的slot数量，不传递该参数的话，则会在迁移过程中提示用户输入。
+               --cluster-yes                 #指定迁移时的确认输入
+               --cluster-timeout <arg>       #设置migrate命令的超时时间
+               --cluster-pipeline <arg>      #定义cluster getkeysinslot命令一次取出的key数量，不传的话使用默认值为10
+               --cluster-replace             #是否直接replace到目标节点
+rebalance      host:port                                      #指定集群的任意一节点进行平衡集群节点slot数量 
+               --cluster-weight <node1=w1...nodeN=wN>         #指定集群节点的权重
+               --cluster-use-empty-masters                    #设置可以让没有分配slot的主节点参与，默认不允许
+               --cluster-timeout <arg>                        #设置migrate命令的超时时间
+               --cluster-simulate                             #模拟rebalance操作，不会真正执行迁移操作
+               --cluster-pipeline <arg>                       #定义cluster getkeysinslot命令一次取出的key数量，默认值为10
+               --cluster-threshold <arg>                      #迁移的slot阈值超过threshold，执行rebalance操作
+               --cluster-replace                              #是否直接replace到目标节点
+add-node       new_host:new_port existing_host:existing_port  #添加节点，把新节点加入到指定的集群，默认添加主节点
+               --cluster-slave                                #新节点作为从节点，默认随机一个主节点
+               --cluster-master-id <arg>                      #给新节点指定主节点
+del-node       host:port node_id                              #删除给定的一个节点，成功后关闭该节点服务
+call           host:port command arg arg .. arg               #在集群的所有节点执行相关命令
+set-timeout    host:port milliseconds                         #设置cluster-node-timeout
+import         host:port                                      #将外部redis数据导入集群
+               --cluster-from <arg>                           #将指定实例的数据导入到集群
+               --cluster-copy                                 #migrate时指定copy
+               --cluster-replace                              #migrate时指定replace
+```
+
+### 客户端连接集群
+
+指令：./redis-cli -h <主机地址> -p <任意集群节点> -c
+
+```bash
+./redis-cli -p7000 -c
+```
+
+### 集群的操作
+
+**查看集群状态**
+
+指令： `check [原始集群中任意节点] [无]`
+
+举例：
+
+```bash
+./redis-cli --cluster check 192.168.202.205:7000
+```
+
+集群节点状态说明
+- 主节点 
+
+1.  主节点存在hash slots,且主节点的hash slots 没有交叉
+
+2.  主节点不能删除
+
+3.  一个主节点可以有多个从节点
+
+4.  主节点宕机时多个副本之间自动选举主节点
+
+- 从节点
+
+1.  从节点没有hash slots
+
+2.  从节点可以删除
+
+3.  从节点不负责数据的写,只负责数据的同步
+
+
+**添加主节点**
+
+指令：add-node [新加入节点] [原始集群中任意节点]
+
+举例：
+
+```bash
+./redis-cli --cluster add-node 192.168.1.158:7006 192.168.1.158:7005
+```
+
+>注意:
+>
+>1.  该节点必须以集群模式启动
+>2.  默认情况下该节点就是以master节点形式添加
+
+**随机添加从节点**
+
+指令：add-node --slave [新加入节点] [集群中任意节点]
+
+举例：
+
+```bash
+./redis-cli --cluster add-node 192.168.1.158:7006 192.168.1.158:7000 --cluster-slave 
+```
+
+>   注意：当添加副本节点时没有指定主节点，redis会随机给副本节点较少的主节点添加当前副本节点
+
+**为确定的master节点添加主节点**
+
+指令：add-node --slave --master-id master节点id [新加入节点] [集群任意节点]
+
+举例：
+
+```bash
+./redis-cli --cluster add-node 127.0.0.1:7006  127.0.0.1:7000 --cluster-slave --cluster-master-id 3c3a0c74aae0b56170ccb03a76b60cfe7dc1912e
+```
+
+**删除副本节点**
+
+指令：删除节点 del-node [集群中任意节点] [删除节点id]
+
+举例：
+
+```bash
+./redis-cli --cluster del-node 127.0.0.1:7002 0ca3f102ecf0c888fc7a7ce43a13e9be9f6d3dd1
+```
+
+>注意：被删除的节点必须是从节点或没有被分配hash slots的节点
+
+**集群在线分片**
+
+指令：reshard [集群中任意节点] [无]
+
+```bash
+./redis-cli --cluster reshard 192.168.1.158:7000 
+```
+
+### Spring操作集群
+
+在配置文件中设置：
+
+```properties
+spring.redis.cluster.nodes=<ip>:<port>,<ip>:<port>,...
+```
+
+>   设置多个是为了防止某个节点宕机，连接不上集群。用逗号分隔多个地址即可。
+
+
+
+## Redis分布式Session管理
+
+RSM：Redis Session Manager
+
+前提：基于Spring框架开发的应用
+
+整合：基于某个应用的整合
+
+原理：给应用加上全局的Filter，使有关Session的请求被Redis接管，不适用服务器的Session
+
+### 开发Session管理
+
+1.  引入redis接管Session的依赖
+
+    ```xml
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-data-redis</artifactId>
+    </dependency>
+    ```
+
+2.  开发Session管理配置类
+
+    ```java
+    @Configuration
+    @EnableRedisHttpSession
+    public class RedisSessionManager {
+       
+    }
+    ```
+
+    >   不用写任何额外配置。
+
+#### 注意
+
+在修改从Redis中取出的Session域中的数据时，只要该对象有变化，就一定要同步到Redis中（手动set）。
+
+原因：由Tomcat管理的Session，存的时JVM对象的地址值，因此Session对象变化时，地址值不变，内容会改变。而session存的是Session对象的序列化内容，因此无法通过Java对象修改。因此每更改一次Session对象时，就必须同步到Redis中。
+
+
+
+## 面试相关
+
+### 缓存穿透、击穿
+
+名词解释：客户端（前台）查询了数据库中没有数据记录导致Redis缓存无效的情况，称为缓存穿透。
+
+MyBatis的解决方案：将在数据库没有查到的数据也进行缓存。key为传入的查询条件，value为null。
+
+举例说明：多次查询一个不存在的id值
+
+```
+Cache Hit Ratio [com.example.springbootmybatis.dao.AccountDao]: 0.0
+==>  Preparing: select * from t_user where id = 0
+==> Parameters: 
+<==      Total: 0
+Cache Hit Ratio [com.example.springbootmybatis.dao.AccountDao]: 0.5
+```
+
+第一次查询返回0条结果，说明没有查询到结果。第二次查询直接到缓存中查找并返回。
+
+### 缓存雪崩
+
+#### 名词解释：
+
+在系统运行的某一时刻，突然系统中的缓存全部失效。恰好在这时，有大量请求进入，但是所有模块的缓存无法利用，所有的请求都查询数据库，导致数据库压力瞬间增大，引起数据库的阻塞或挂起。
+
+#### 诱因：
+
+1.  由于企业数据量大，很多时候无法永久存储。因此都会为每个模块设置不同的超时时长。当一个模块中的大量数据同时设置同一个超时时长时，等时间一到，那么大量的数据超时，数据就需要从数据库中读取。这种情况下就容易引起缓存雪崩。
+2.  秒杀场景中，大量用户数据还没有缓存起来。
+
+#### 解决方案1：永久存储（不推荐），占用空间大。
+
+#### 解决方案2：针对不同的业务数据，设置不同的超时时间。
+
+根据不同的场景，设计不同的超时时间。分批次（就像高中食堂开饭分批次下课一样）
+
+指标：
+
+1.  数据量
+2.  调用频率
+3.  用户体验（缓急程度，响应时间）
+4.  等等。。
