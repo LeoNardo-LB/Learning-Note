@@ -2,8 +2,6 @@
 
 记录mybatis源码解析。
 
-
-
 ## MyBatis的Cache接口
 
 简介：MyBatis 的 Cache接口是作为mybatis引用外部缓存中间件（如Redis等）所必须要实现的接口。
@@ -107,3 +105,8 @@ public interface Cache {
 ```
 
 **引用自定义cache**：在mapper映射文件中，使用 `<cache type="自定义cache全类名 ">` 指定自定义的 cache，该cache需要实现ibatis包中的Cache接口；
+
+
+
+## MyBatis SqlSession获取Mapper代理实现类的方法
+

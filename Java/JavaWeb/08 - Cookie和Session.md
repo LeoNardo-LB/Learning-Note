@@ -516,6 +516,26 @@ public boolean authentication(String principal, String credential) {
     ```
 
     >   此处的 Constants.KAPTCHA_SESSION_KEY 是 kaptcha 下的一个常量，是Session中验证码的key。
+    
+    改进：将验证码抽取出来
+    
+    ```java
+    public static void codeValidator(HttpServletRequest req) {
+        // 获取Session中的验证码（谷歌验证码自动生成）
+        String sessionCode = (String) req.getSession().getAttribute(Constants.KAPTCHA_SESSION_KEY);
+        // 立刻删除
+        req.getSession().removeAttribute(Constants.KAPTCHA_SESSION_KEY);
+        // 获取用户传来的验证码
+        String dbCode = req.getParameter("confirmCode");
+    
+        // 比较，分结果
+        if (sessionCode == null) {
+            throw new RuntimeException("请勿重复提交表单！");
+        } else if (!sessionCode.equals(dbCode)) {
+            throw new RuntimeException("验证码错误！");
+        }
+    }
+    ```
 
 #### 浏览器缓存说明
 
