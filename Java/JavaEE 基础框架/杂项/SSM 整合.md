@@ -4,13 +4,13 @@
 
 本章框架集成所使用的软件版本要求如下：
 
-| 软件       | 版本          |
-| :--------- | :------------ |
-| SpringMVC  | 4.0.0.RELEASE |
-| Spring     | 4.0.0.RELEASE |
-| Mybatis    | 3.2.8         |
-| C3P0连接池 | 0.9.2         |
-| MYSQL驱动  | 5.1.37        |
+| 软件        | 版本 |
+| :---------- | :--- |
+| SpringMVC   |      |
+| Spring      |      |
+| Mybatis     |      |
+| Druid连接池 |      |
+| MYSQL驱动   |      |
 
 
 
@@ -279,11 +279,11 @@ Spring环境构建时需要读取web应用的初始化参数`contextConfigLocati
     xmlns:p="http://www.springframework.org/schema/p"
     xmlns:mvc="http://www.springframework.org/schema/mvc"
     xsi:schemaLocation="
-        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
-        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
-        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+        http://www.springframework.org/schema/aop		http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+        http://www.springframework.org/schema/mvc		http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+        http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx		http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/context 	http://www.springframework.org/schema/context/spring-context-4.0.xsd">
 
 </beans>
 ```
@@ -503,10 +503,10 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 <beans>
     ...
     <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init">
-        <property name="driverClassName" value="${db.driverClass}"/>
-        <property name="url" value="${db.url}"/>
-        <property name="username" value="${db.username}"/>
-        <property name="password" value="${db.password}"/>
+        <property name="driverClassName" value="${db_driverClass}"/>
+        <property name="url" value="${db_url}"/>
+        <property name="username" value="${db_username}"/>
+        <property name="password" value="${db_password}"/>
     </bean>
     ...
 </beans>
@@ -545,15 +545,18 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 ```xml
 <beans>
     ...
+    <!-- 配置事务管理器（切面类） -->
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager" >
         <property name="dataSource" ref="dataSource"/>
     </bean>
+    <!-- 配置事务建议 -->
     <tx:advice id="transactionAdvice" transaction-manager="transactionManager" >
         <tx:attributes>
             <tx:method name="*" propagation="REQUIRED" isolation="DEFAULT" rollback-for="java.lang.Exception" />
             <tx:method name="query*" read-only="true" />
         </tx:attributes>
     </tx:advice>
+    <!-- 配置AOP -->
     <aop:config>
         <aop:advisor advice-ref="transactionAdvice" pointcut="execution(* com..*Service.*(..))"/>
     </aop:config>
@@ -563,12 +566,12 @@ SpringMVC环境构建时需要读取servlet初始化参数 `init-param` , 从 cl
 
 #### 测试前，需要在数据库中增加`atcrowdfunding`库及`t_user`表。
 
-```
-CREATE DATABASE `atcrowdfunding`;
+```sql
+CREATE DATABASE `XXX`;
 ...
-CREATE TABLE `t_user` (
-  `id` int(11) NOT NULL AUTO_INCREMENT
-  PRIMARY KEY (`id`)
+CREATE TABLE `t_test` (
+    `id` int(11) NOT NULL AUTO_INCREMENT
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 ```
 

@@ -802,142 +802,6 @@ public class TestClass {
 
 
 
-## SPEL 表达式
-
-Spring Expression Language，Spring表达式语言，简称SpEL。支持运行时查询并可以操作对象图。
-
-和JSP页面上的**EL**表达式、Struts2中用到的**OGNL**表达式一样，SpEL根据JavaBean风格的**getXxx()**、**setXxx()**方法定义的属性**访问对象图，**完全符合我们熟悉的操作习惯。
-
-### 语法
-
-SpEL使用 `#{ }` 作为定界符，所有在大框号中的字符都将被认为是SpEL表达式。
-
-### 具体操作
-
-#### 1、使用字面量
-
-整数：`<property name="count" value="**#{5}**"/>`
-
-小数：`<property name="frequency" value="**#{89.7}**"/>`
-
-科学计数法：`<property name="capacity" value="**#{1e4}**"/>`
-
-String类型的字面量可以使用单引号或者双引号作为字符串的定界符号
-
--   `<property name=“name” value="#{'Chuck'}"/>`
--   `<property name='name' value='#{"Chuck"}'/>`
-
-Boolean：`<property name="enabled" value="**#{false}**"/>`
-
-#### 2、引用其他bean（代替ref属性）
-
-```xml
-<bean id="dept"></bean>
-
-<bean id=*"emp04"* class=*"com.atguigu.parent.bean.Employee"*>
-    <property name="empId" value="1003"/>
-    <property name="empName" value="Kate"/>
-    <property name="age" value="21"/>
-    <!-- 引用其他bean -->
-    <property name="detp" value="#{dept}"/>
-</bean>
-```
-
-#### 3、用其他bean的属性值作为自己某个属性的值
-
-```xml
-<bean id="car1" class="com.atguigu.pojo.Car">
-    <!-- 被引用的属性值 -->
-    <property name="carId" value="浙G12345"/>
-    <property name="carName" value="路虎"/>
-</bean>
-
-<bean id="p1" class="com.atguigu.pojo.Person">
-    <property name="id" value="#{12}"/>
-    <!-- 引用其他bean 的属性值 -->
-    <property name="name" value="#{car1.carId}"/>
-</bean>
-```
-
-#### 4、调用非静态方法
-
-调用非静态方法，可以传入参数（字符串用单双引号包裹）
-
-语法格式：`对象.方法名称(参数)`
-
-```java
-public class Car {
-    private String carId;
-    private String carName;
-    
-    // Car类的非静态方法
-    public String getCar(String car) {
-        System.out.println("获取了" + car);
-        return car;
-    }
-}
-```
-
-```xml
-<bean id="p1" class="com.atguigu.pojo.Person">
-    <property name="id" value="#{12}"/>
-    <!-- 调用非静态方法 -->
-    <property name="name" value="#{car1.getCar('路虎')}"/>
-</bean>
-```
-
-#### 5、调用静态方法
-
-语法格式：`T(方法全类名).静态方法(参数)`
-
-```java
-public class Car {
-    private String carId;
-    private String carName;
-
-    // Car类的静态方法
-    public static String getStaticCar(String car) {
-        System.out.println("static 获取了" + car);
-        return car;
-    }
-}
-```
-
-```xml
-<bean id="p1" class="com.atguigu.pojo.Person">
-    <property name="id" value="#{12}"/>
-    <!-- 调用静态方法 -->
-    <property name="name" value="#{T(com.atguigu.pojo.Car).getStaticCar('大众')}"/>
-</bean>
-```
-
-#### 6、运算
-
-可在spel表达式中进行运算，运算符如下
-
--   算术运算符：+、-、*、/、%、^
-
--   字符串连接：+
-
--   比较运算符：<、>、==、<=、>=、lt、gt、eq、le、ge
-
--   逻辑运算符：and, or, not, |
-
--   三目运算符：判断条件?判断结果为true时的取值:判断结果为false时的取值
-
--   正则表达式：matches
-
-
-```xml
-<bean id="p1" class="com.atguigu.pojo.Person">
-    <property name="id" value="#{12}"/>
-    <!-- 运算 -->
-    <property name="salary" value="#{15*16}"/>
-</bean>
-```
-
-
-
 ## AOP 面向切面编程
 
 -   AOP：Aspect Oriented Programming，面向切面编程
@@ -1038,16 +902,16 @@ Spring提供的面向切面编程的方式，即为AOP编程，切面表达式�
 ### Spring AOP 术语
 
 -   通知(Advice)：通知就是增强的代码。比如前置增强的代码、后置增强的代码、异常增强代码等。
--   切面(Aspect)：切面就是包含有通知代码的类叫切面（也可称为切面类）。
+-   切面类(Aspect)：切面就是包含有通知代码的类叫切面（也可称为切面类）。
 -   横切关注点：可以添加增强代码的位置。比如前置位置，后置位置，异常位置。和返回值位置。
 -   目标(Target)：被代理的对象。
 -   代理(Proxy)：为了拦截目标对象方法，而被创建出来的那个对象，就叫做代理对象，用于嵌入横切关注点对应的通知方法（代码）
 -   连接点(Joinpoint)：连接点指的是横切关注点和程序代码的连接，叫连接点。（可以进行增强的代码位置）
 -   切入点(pointcut)：切入点指的是用户真正处理的连接点，叫切入点。（真正进行增强的代码位置）。在Spring中切入点通过org.springframework.aop.Pointcut 接口进行描述，它使用类和方法作为连接点的查询条件。
 
-##### 示意图
+**示意图**
 
-![通知图解](C:/Users/Administrator/Desktop/通知图解.png)
+![picture](_images/picture.png)
 
 ### AOP 的 HelloWorld
 
@@ -1104,6 +968,7 @@ public static <T> void logBefore(JoinPoint joinPoint) {
     System.out.println("前置通知：@Before --> logBefore");
 }
 ```
+
 #### 后置通知 @After
 
 在目标方法结束之后调用，如下：
@@ -1114,6 +979,7 @@ public static <T> void logAfter() {
     System.out.println("后置通知：@After --> logAfter");
 }
 ```
+
 #### 返回通知 @AfterReturning
 
 在方法正常返回之后调用，可以使用 `returning = "result" + 返回值形参` 的方式获取方法返回值，如下：
@@ -1125,6 +991,7 @@ public static <T> void logAfterReturn(Object result) {
     System.out.println("返回值为：" + result);
 }
 ```
+
 >   注意：returning属性值要与形参列表的参数名一致
 
 #### 异常通知 @AfterThrowing
@@ -1138,6 +1005,7 @@ public static <T> void logAfterThrow(Exception e) {
     System.out.println("异常为：" + e);
 }
 ```
+
 >   注意：throwing属性值要与形参列表的参数名一致
 
 #### 环绕通知 @Around
@@ -1276,12 +1144,12 @@ JoinPoint对象记录了当且切入点增强对象的信息，任何一个增�
 
 **相关API**
 
-| 方法名 | 说明 |
-| ------ | ---- |
-|Object[] getArgs()|获取连接点方法运行时的入参列表； |
-|Signature getSignature() |获取连接点的方法签名对象； |
-|Object getTarget() |获取连接点所在的目标对象； |
-|Object getThis() |获取代理对象本身； |
+| 方法名                   | 说明                             |
+| ------------------------ | -------------------------------- |
+| Object[] getArgs()       | 获取连接点方法运行时的入参列表； |
+| Signature getSignature() | 获取连接点的方法签名对象；       |
+| Object getTarget()       | 获取连接点所在的目标对象；       |
+| Object getThis()         | 获取代理对象本身；               |
 
 **代码示例**
 
@@ -1304,7 +1172,7 @@ public static <T> void logAfter(JoinPoint joinPoint) {
 
 >   环绕通知（@Around）使用 `ProceedingJoinPoint` 形参来获取信息。
 
-### 使用XML配置AOP
+### XML配置AOP
 
 详见如下：
 
@@ -1351,11 +1219,352 @@ public static <T> void logAfter(JoinPoint joinPoint) {
 
 
 
+## Spring 声明式事务
+
+### Spring 事务简介
+
+事务分为声明式和编程式两种：
+
+**1、声明式事务**
+
+声明式事务是指通过注解的形式对事务的各种特性进行控制和管理。它将事务管理代码从业务方法中分离出来，以声明的方式来实现事务管理。事务管理代码的固定模式作为一种横切关注点，可以通过AOP方法模块化，进而借助Spring AOP框架实现声明式事务管理。Spring在不同的事务管理API之上定义了一个抽象层，通过配置的方式使其生效，从而让应用程序开发人员不必了解事务管理*API的底层实现细节**，就可以使用Spring的事务管理机制。
+
+**2、编码式（编程式）事务**
+
+通过编码的方式实现事务的声明。编程式事务管理需要将事务管理代码**嵌入到业务方法中**来控制事务的提交和回滚。在使用编程的方式管理事务时，必须在每个事务操作中包含额外的事务管理代码。相对于**核心业务**而言，事务管理的代码显然属于**非核心业务**，如果多个模块都使用同样模式的代码进行事务管理，显然会造成较大程度的**代码冗余**。
+
+Spring既支持编程式事务管理，也支持声明式的事务管理。
+
+#### Spring 事务管理器
+
+Spring的核心事务管理接口是 `PlatformTransactionManager` 。它为事务管理封装了一组独立于技术的方法。无论使用Spring的哪种事务管理策略(编程式或声明式)，事务管理器都是必须的。
+
+PlatformTransactionManager 接口：
+
+```java
+public interface PlatformTransactionManager extends TransactionManager {
+
+	// 获取链接 与 开启事务（设置手动提交）的抽象方法
+    TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException;
+
+    // 提交的抽象方法
+    void commit(TransactionStatus status) throws TransactionException;
+
+    // 回滚的抽象方法
+    void rollback(TransactionStatus status) throws TransactionException;
+
+}
+```
+
+**事务管理器的主要实现**
+
+1.  **DataSourceTransactionManager**：在应用程序中只需要处理一个数据源，而且通过JDBC存取。
+
+2.  JtaTransactionManager：在JavaEE应用服务器上用JTA(Java Transaction API)进行事务管理
+
+3.  HibernateTransactionManager：用Hibernate框架存取数据库
+
+>   事务管理器可以以普通的 bean 的形式声明在 Spring IOC 容器中。
+
+**DataSourceTransactionManager 与 编程式事务的对应关系图**
+
+![image-20201104105601530](_images/image-20201104105601530.png)
+
+### @Transaction 注解配置事务
+
+可以使用 `@Transaction` 注解开启事务，标注需要开启事务的方法或类（在类上，使用该类的所有方法都会开启事务），使用事务需要在配置文件中开启事务支持。`<tx:annotation-driven>`
+
+环境准备：需要准备数据库连接配置。
+
+#### 配置步骤
+
+1、在IOC中加入事务管理器，一般使用 `DataSourceTransactionManager` ，Spring配置文件：
+
+```xml
+<!-- 配置事务管理器 -->
+<bean id="tm" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+```
+
+2、开启注解支持，Spring配置文件：
+
+```xml
+<!-- 设置开启事务注解驱动
+        transaction-manager属性：指定事务管理器，引用上面配置的事务管理器的id即可。默认值为 transactionManager
+-->
+<tx:annotation-driven transaction-manager="tm"/>
+```
+
+3、在需要开启事务的方法上使用 `@Transaction` 注解
+
+```java
+@Service
+public class AccountServiceImpl implements AccountService {
+    
+    @Autowired
+    AccountDao accountDao;
+    
+    @Override
+    
+    // 在需要开启事务的方法上加上注解即可
+    @Transactional
+    public void transferAccount(Integer source, Integer target, BigDecimal amount) {
+        // 减钱
+        accountDao.subMoney(source, amount);
+        
+        // 模拟网络故障
+        int a = 10 / 0;
+        
+        // 增钱
+        accountDao.addMoney(target, amount);
+    }
+    
+}
+```
+
+### @Transaction 属性
+
+#### 1、isolution 事务隔离级别
+
+可以设置事务隔离级别，有读未提交，读已提交，可重复读及序列化四个级别。一般用默认即可。
+
+#### 2、rollback-for 与 no-rollback-for
+
+默认情况下，tx 事务只捕获 RuntimeException 级别的异常。
+
+-   使用 `no-rollback-for` 可以指定 RuntimeException 下的异常，哪些不被捕获。
+-   使用 `rollback-for` 可以指定任意需要被捕获的异常。
+
+#### 3、read-only 只读操作
+
+在该事务没有增删改的情况下使用。Spring对只读操作有一定的优化。
+
+#### 4、timeout 超时控制
+
+可以使用 `timeout` 属性标注超时时间，若事务执行超时，则回滚，并抛出 `` 异常。
+
+#### 5、propagation 事务传播属性
+
+`propagation` 属性用于控制事务在调用另一个事务时的行为方式，当事务方法被另一个事务方法调用时，必须指定事务应该如何传播。例如: 方法可能继续在现有事务中运行，也可能开启一个新事务，并在自己的事务中运行。
+
+事务的传播行为可以由传播属性指定。Spring定义了7种类传播行为(默认为REQUIRED)。
+
+| 传播属性      | 描述                                                         |
+| ------------- | ------------------------------------------------------------ |
+| REQUIRED      | 如果有外层事务，则当前方法就在该事务内运行。                 |
+| REQUIRED_NEW  | 为当前方法新建一个单独的事务，挂起外层事务                   |
+| SUPPORTS      | 如果有外层事务在运行，当前方法就在这个事务内运行，否则它可以不运行在事务中。 |
+| NOT_SUPPORTED | 当前方法不可运行在事务内，如果有外层事务，则将他挂起         |
+| MANDATORY     | 必须运行在事物内部，如果没有正在外层事务，则抛出异常         |
+
+常用的有 `REQUIRED` 与 `REQUIRED_NEW`
+
+##### 外层事务与内层事务都是 REQUIRED
+
+![acdfavsvsf](_images/acdfavsvsf.png)
+
+##### 外层事务与内层事务都是 REQUIRED_NEW
+
+![asdasdasdasd](_images/asdasdasdasd.png)
+
+##### 外层事务是REQUIRED，内层事务有REQUIRED_NEW
+
+![f4f343f3fdfsdf](_images/f4f343f3fdfsdf.png)
+
+##### 总结：
+
+REQUIRED是命运共同体，REQUIRED自己开一个新事务，建立新连接来搞。REQUIRED与外层事务同生共死，REQUIRED_NEW另起炉灶
+
+### XML配置声明式事务
+
+1、加入 事务管理器 到IOC容器
+
+2、配置事务建议，精细化控制，具体到方法
+
+3、配置AOP，配置切入点。然后将事务建议加入AOP即可。
+
+```xml
+<!-- 配置事务管理器（切面类） -->
+<bean id="tm" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource" ref="dataSource"/>
+</bean>
+
+<!--tx:advice：事务建议，用于配置事务切面类及相关属性。
+        id：唯一标识
+        transaction-manager：对指定事务管理器生效，默认值为 transactionManager
+-->
+<tx:advice id="myTx" transaction-manager="tm">
+    <!-- 配置事务的属性，精细化控制，具体到方法 -->
+    <tx:attributes>
+        <!-- 精确匹配 -->
+        <tx:method name="UpdateUser"/>
+        <tx:method name="transferAccount" propagation="REQUIRED"/>
+
+        <!-- 匹配以XXX开头的所有方法 -->
+        <tx:method name="update*" propagation="REQUIRES_NEW"/>
+        <tx:method name="delete*" propagation="REQUIRED"/>
+        <tx:method name="insert" propagation="REQUIRES_NEW"/>
+
+        <!-- 匹配剩下的所有元素 -->
+        <tx:method name="*" read-only="true"/>
+
+    </tx:attributes>
+</tx:advice>
+
+<!-- 配置切面类，指定事务建议 -->
+<aop:config proxy-target-class="true">
+    <aop:pointcut id="dataSourcePointcut" expression="execution(public * com..*Service*.*(..))"/>
+    <!-- 指定事务建议（事务建议） -->
+    <aop:advisor advice-ref="myTx" pointcut-ref="dataSourcePointcut"/>
+</aop:config>
+```
+
+`tx:attributes` 属性的匹配优先规则：越精确，匹配优先级越高。
+
+
+
+## SPEL 表达式
+
+Spring Expression Language，Spring表达式语言，简称SpEL。支持运行时查询并可以操作对象图。
+
+和JSP页面上的**EL**表达式、Struts2中用到的**OGNL**表达式一样，SpEL根据JavaBean风格的**getXxx()**、**setXxx()**方法定义的属性**访问对象图，**完全符合我们熟悉的操作习惯。
+
+### 语法
+
+SpEL使用 `#{ }` 作为定界符，所有在大框号中的字符都将被认为是SpEL表达式。
+
+### 具体操作
+
+#### 1、使用字面量
+
+整数：`<property name="count" value="**#{5}**"/>`
+
+小数：`<property name="frequency" value="**#{89.7}**"/>`
+
+科学计数法：`<property name="capacity" value="**#{1e4}**"/>`
+
+String类型的字面量可以使用单引号或者双引号作为字符串的定界符号
+
+-   `<property name=“name” value="#{'Chuck'}"/>`
+-   `<property name='name' value='#{"Chuck"}'/>`
+
+Boolean：`<property name="enabled" value="**#{false}**"/>`
+
+#### 2、引用其他bean（代替ref属性）
+
+```xml
+<bean id="dept"></bean>
+
+<bean id=*"emp04"* class=*"com.atguigu.parent.bean.Employee"*>
+    <property name="empId" value="1003"/>
+    <property name="empName" value="Kate"/>
+    <property name="age" value="21"/>
+    <!-- 引用其他bean -->
+    <property name="detp" value="#{dept}"/>
+</bean>
+```
+
+#### 3、用其他bean的属性值作为自己某个属性的值
+
+```xml
+<bean id="car1" class="com.atguigu.pojo.Car">
+    <!-- 被引用的属性值 -->
+    <property name="carId" value="浙G12345"/>
+    <property name="carName" value="路虎"/>
+</bean>
+
+<bean id="p1" class="com.atguigu.pojo.Person">
+    <property name="id" value="#{12}"/>
+    <!-- 引用其他bean 的属性值 -->
+    <property name="name" value="#{car1.carId}"/>
+</bean>
+```
+
+#### 4、调用非静态方法
+
+调用非静态方法，可以传入参数（字符串用单双引号包裹）
+
+语法格式：`对象.方法名称(参数)`
+
+```java
+public class Car {
+    private String carId;
+    private String carName;
+    
+    // Car类的非静态方法
+    public String getCar(String car) {
+        System.out.println("获取了" + car);
+        return car;
+    }
+}
+```
+
+```xml
+<bean id="p1" class="com.atguigu.pojo.Person">
+    <property name="id" value="#{12}"/>
+    <!-- 调用非静态方法 -->
+    <property name="name" value="#{car1.getCar('路虎')}"/>
+</bean>
+```
+
+#### 5、调用静态方法
+
+语法格式：`T(方法全类名).静态方法(参数)`
+
+```java
+public class Car {
+    private String carId;
+    private String carName;
+
+    // Car类的静态方法
+    public static String getStaticCar(String car) {
+        System.out.println("static 获取了" + car);
+        return car;
+    }
+}
+```
+
+```xml
+<bean id="p1" class="com.atguigu.pojo.Person">
+    <property name="id" value="#{12}"/>
+    <!-- 调用静态方法 -->
+    <property name="name" value="#{T(com.atguigu.pojo.Car).getStaticCar('大众')}"/>
+</bean>
+```
+
+#### 6、运算
+
+可在spel表达式中进行运算，运算符如下
+
+-   算术运算符：+、-、*、/、%、^
+
+-   字符串连接：+
+
+-   比较运算符：<、>、==、<=、>=、lt、gt、eq、le、ge
+
+-   逻辑运算符：and, or, not, |
+
+-   三目运算符：判断条件?判断结果为true时的取值:判断结果为false时的取值
+
+-   正则表达式：matches
+
+
+```xml
+<bean id="p1" class="com.atguigu.pojo.Person">
+    <property name="id" value="#{12}"/>
+    <!-- 运算 -->
+    <property name="salary" value="#{15*16}"/>
+</bean>
+```
+
+
+
 ## JdbcTemplate
 
 Spring 提供了 JDBCTemplate 能快捷地操作数据库，JDBCTemplate 和 QueryRunner 类似。
 
-使用前提：已经配置好了数据源（这里使用Druid数据库连接池做演示）。
+使用前提：已经配置好了数据源。
 
 **Spring配置：将JdbcTemplate加入IOC容器**
 
@@ -1573,5 +1782,3 @@ public class EmployeeDao extends JdbcDaoSupport {
 
 }
 ```
-
- 
