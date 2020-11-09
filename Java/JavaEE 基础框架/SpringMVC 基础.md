@@ -464,6 +464,103 @@ public ModelAndView testModelAndView(ModelAndView mav) {
 
 
 
+## Restful 风格请求
+
+如果需要使用Restful的编码风格（即使用请求方式区分增删改查），则需要在web.xml 中添加 `HiddenHttpMethodFilter` 过滤器。该过滤器可以识别带有 `_method` 请求参数的提交请求。
+
+### Restful风格说明：
+
+大体上可以解释为：通过唯一的资源路径，路径中少量的改变及一些附加参数来确定请求的资源及操作。其中少量的资源是区别请求的具体资源。
+
+传统的方式是：使用参数来请求参数
+
+比如：`http://ip:port/工程名/资源名?请求参数`
+
+举例：`http://127.0.0.1:8080/springmvc/book?action=delete&id=1`\
+
+restful风格是：使用url请求唯一参数，使用请求方式来区别操作
+
+比如：`http://ip:port/工程名/资源名/请求参数/请求参数`
+
+举例：`http://127.0.0.1:8080/springmvc/book/1`
+
+### 规范
+
+restful风格中请求方式GET、POST、PUT、DELETE分别表示查、增、改、删。
+
+| url                             | 请求方式       | 说明                      |
+| ------------------------------- | -------------- | ------------------------- |
+| `http://ip:port/工程名/book/1`  | HTTP请求GET    | 表示要查询id为1的图书     |
+| `http://ip:port/工程名/book  `  | HTTP请求GET    | 表示查询全部的图书        |
+| `http://ip:port/工程名/book   ` | HTTP请求POST   | 表示要添加一个图书        |
+| `http://ip:port/工程名/book/1`  | HTTP请求PUT    | 表示要修改id为1的图书信息 |
+| `http://ip:port/工程名/book/1 ` | HTTP请求DELETE | 表示要删除id为1的图书信息 |
+
+### 使用步骤：
+
+1.  配置 `HiddenHttpMethodFilter`  过滤器
+
+    ```xml
+    <!-- 配置Restful风格请求filter -->
+    <filter>
+        <filter-name>HiddenHttpMethodFilter</filter-name>
+        <filter-class>org.springframework.web.filter.HiddenHttpMethodFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>HiddenHttpMethodFilter</filter-name>
+        <servlet-name>DispatcherServlet</servlet-name>
+    </filter-mapping>
+    ```
+
+    >   注意：`HiddenHttpMethodFilter`  需要在 `CharacterEncodingFilter` 之后配置！
+
+2.  在每次提交的请求中加入 `name='_method'` 的表单属性。
+
+    ![image-20201109112544815](_images/image-20201109112544815.png)
+
+3.  在控制器中通过唯一资源路径接收，用请求方式区分各种操作
+
+    ```java
+    @GetMapping("/book")
+    public String getBookList(Map map) {
+        List<Book> books = bookService.selectBooks();
+        map.put("books", books);
+        return "bookList";
+    }
+    
+    @ResponseBody
+    @DeleteMapping("/book/{id}")
+    public String removeBook(@PathVariable("id") Integer id) throws IOException {
+        bookService.deleteBookById(id);
+        return "success";
+    }
+    
+    @PostMapping("/book")
+    public String addBook(Book book) {
+        bookService.insertBook(book);
+        return "redirect:book";
+    }
+    
+    @GetMapping("/book/{id}")
+    public String getSingleBook(@PathVariable("id") Integer id, Map map) {
+        Book book = bookService.selectBookById(id);
+        map.put("bookInfo", book);
+        return "bookEdit";
+    }
+    
+    @PutMapping("/book")
+    public String modifyBook(Book book) {
+        bookService.updateBook(book);
+        return "redirect:book";
+    }
+    ```
+
+### Restful分析：
+
+
+
+
+
 ## 杂项
 
 ### 编码过滤器
@@ -473,16 +570,6 @@ public ModelAndView testModelAndView(ModelAndView mav) {
 web.xml
 
 ```xml
-<servlet>
-    <servlet-name>DispatcherServlet</servlet-name>
-    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-    <load-on-startup>1</load-on-startup>
-</servlet>
-<servlet-mapping>
-    <servlet-name>DispatcherServlet</servlet-name>
-    <url-pattern>/</url-pattern>
-</servlet-mapping>
-
 <filter>
     <filter-name>CharacterEncodingFilter</filter-name>
     <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
@@ -519,6 +606,3 @@ web.xml
 <mvc:annotation-driven/>
 ```
 
-### Restful风格编码
-
-如果需要使用Restful的编码风格（即使用请求方式区分增删改查），则需要在web.xml 中添加 `HiddenHttpMethodFilter` 过滤器。该过滤器可以识别带有 `_method` 请求参数的提交请求。
