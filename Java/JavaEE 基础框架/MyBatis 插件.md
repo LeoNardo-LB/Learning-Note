@@ -4,6 +4,8 @@ MyBatis逆向工程，简称MBG。是一个专门为MyBatis框架使用者定制
 
 mybatis的逆向工程，可以对单表生成的增，删，改，查代码的插件。
 
+**逆向工程的包为：mybatis-generator-core-1.3.2.jar**
+
 可以生成的基础代码有：
 
 1、数据库表对应的javaBean对象
@@ -27,24 +29,24 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
     <!--
         targetRuntime 属性设置生成的Mybatis代码的版本
             MyBatis3Simple      简单版，只用CRUD功能
-            MyBatis3            标准版
+            MyBatis3            标准版，可以实现复杂的查询操作
     -->
     <context id="DB2Tables" targetRuntime="MyBatis3">
 
         <!-- 去掉全部的注释 -->
         <commentGenerator>
-            <property name="suppressAllComments" value="true" />
+            <property name="suppressAllComments" value="true"/>
         </commentGenerator>
 
         <!-- 修改数据库的连接属性 -->
         <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-                        connectionURL="jdbc:mysql://localhost:3306/mbg"
+                        connectionURL="jdbc:mysql://localhost:3306/数据库名"
                         userId="root"
                         password="root">
         </jdbcConnection>
 
         <javaTypeResolver >
-            <property name="forceBigDecimals" value="false" />
+            <property name="forceBigDecimals" value="false"/>
         </javaTypeResolver>
 
         <!--
@@ -52,7 +54,7 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
                 targetPackage 指定包名
                 targetProject 生成代码放在哪个位置
         -->
-        <javaModelGenerator targetPackage="com.atguigu.pojo" targetProject="./mbg/src">
+        <javaModelGenerator targetProject="./模块名/src" targetPackage="com.包名">
             <property name="enableSubPackages" value="true" />
             <property name="trimStrings" value="true" />
         </javaModelGenerator>
@@ -62,7 +64,7 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
                 targetPackage 指定包名
                 targetProject 生成代码放在哪个位置
         -->
-        <sqlMapGenerator targetPackage="com.atguigu.mapper"  targetProject="./mbg/src">
+        <sqlMapGenerator targetProject="./模块名/src" targetPackage="com.包名">
             <property name="enableSubPackages" value="true" />
         </sqlMapGenerator>
 
@@ -71,8 +73,7 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
                 targetPackage 指定包名
                 targetProject 生成代码放在哪个位置
         -->
-        <javaClientGenerator type="XMLMAPPER" targetPackage="com.atguigu.mapper"
-                             targetProject="./mbg/src">
+        <javaClientGenerator type="XMLMAPPER" targetProject="./模块名/src" targetPackage="com.包名">
             <property name="enableSubPackages" value="true" />
         </javaClientGenerator>
 
@@ -81,7 +82,7 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
                 tableName="t_user"          是表名
                 domainObjectName="User"     是JavaBean对象类名
          -->
-        <table tableName="t_user" domainObjectName="User" />
+        <table tableName="数据库表名" domainObjectName="实体类" />
         <table tableName="t_book" domainObjectName="Book" />
 
     </context>

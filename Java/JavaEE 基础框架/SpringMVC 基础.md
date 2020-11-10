@@ -43,7 +43,7 @@ View Resolver负责将处理结果生成View视图，View Resolver首先根据�
 
 
 
-## SpringMVC 配置文件
+## SpringMVC 单项配置文件
 
 ### 视图解析器
 
@@ -56,13 +56,64 @@ View Resolver负责将处理结果生成View视图，View Resolver首先根据�
 </bean>
 ```
 
-没有视图解析器之前，我们在Controller中需要返回整完的跳转路径。有了视图解析器之后，我们只需要返回文件名即可，比如说，如果我返回 return "ok"；那么这个ok会跟视图解析器中的前缀，后缀做字符串拼接操作。然后得到最终的跳转路径。最终的跳转路径是： 前缀 + ok + 后缀，得到结果是： `/WEB-INF/pages/ok.jsp`
+没有视图解析器之前，我们在Controller中需要返回整完的跳转路径。有了视图解析器之后，我们只需要返回文件名即可，比如说，如果我返回 return "ok"；那么这个ok会跟视图解析器中的前缀，后缀做字符串拼接操作，得到最终的跳转路径。
 
-### 允许访问静态资源
+**最终的跳转路径是： 前缀 + ok + 后缀**
+
+得到结果是： `/WEB-INF/pages/ok.jsp`
+
+### 编码过滤器
+
+默认情况下，get请求可以自动转换编码，而Post请求默认不处理。Spring框架提供了转换编码的过滤器，名为 `CharacterEncodingFilter` 。在web.xml 中配置该过滤器即可自动转换编码。
+
+用法：在mvc专属的Spring配置文件中加入如下注解：
+
+```xml
+<filter>
+    <filter-name>CharacterEncodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+        <param-name>encoding</param-name>
+        <param-value>UTF-8</param-value>
+    </init-param>
+    <init-param>
+        <param-name>forceRequestEncoding</param-name>
+        <param-value>true</param-value>
+    </init-param>
+    <init-param>
+        <param-name>forceResponseEncoding</param-name>
+        <param-value>true</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+    <filter-name>CharacterEncodingFilter</filter-name>
+    <servlet-name>DispatcherServlet</servlet-name>
+</filter-mapping>
+```
+
+### 静态资源与动态资源的放行
+
+如果SpringMVC使用DispatcherServlet接管所有请求，默认情况下静态请求也会被拦截。这时就需要配置静态请求与动态注解的请求的放行。
+
+用法：在mvc专属的Spring配置文件中加入如下注解：
+
+```xml
+<!-- 放行静态资源（使用静态资源默认Handler） -->
+<mvc:default-servlet-handler/>
+
+<!-- 添加动态资源 -->
+<mvc:annotation-driven/>
+```
 
 
 
-## @Controller
+
+
+
+
+## SpringMVC Handler注解
+
+### @Controller
 
 #### 使用方式
 
@@ -75,9 +126,9 @@ public class ReturnController {
 }
 ```
 
+>   在SpringMVC中，@Controller被赋予了不同于@Component、@Service注解的含义，标明该类是一个控制器类，而不是单单加入到IOC容器中那么简单。
 
-
-## @RequestMapping
+### @RequestMapping
 
 `@RequestMapping` 是给个方法配置它的访问地址。就比如web学习的Servlet程序，在web.xml中配置了访问地址之后，它们之间就有一个访问映射关系。
 
@@ -104,6 +155,16 @@ public String testReturnString() {
 | params       | 要求请求的参数匹配<br>params="username"     表示  请求地址必须带有username参数<br/>params="username=abc"  表示  请求参数中必须要有username，而且值还必须是abc <br/>params="username!=abc" 表示  1、请求参数中不能有username参数。2、有username参数，但值不能等于abc <br/>params="!username"    表示  请求地址不能带有username参数 |
 | headers      | 要求请求头匹配，规则同 params                                |
 |              |                                                              |
+
+### @ResponseBody
+
+
+
+### @RequestBody
+
+
+
+### HttpMessageConverter 原理
 
 
 
@@ -437,6 +498,8 @@ public ModelAndView testModelAndView(ModelAndView mav) {
 }
 ```
 
+>   注意，此处需要将视图与model一并返回。
+
 ### 保存数据到Session @SessionAttributes 
 
 `@SessionAttributes` 注解标注的位置在类名上，作用是将隐含模型中的指定数据复制一份，保存到Session域中，有两个属性：
@@ -555,54 +618,248 @@ restful风格中请求方式GET、POST、PUT、DELETE分别表示查、增、改
     }
     ```
 
-### Restful分析：
 
 
+## 拦截器（HandlerInterceptor）
 
+SpringMVC中的拦截器，它可以对SpringMVC的资源的请求进行拦截处理。可以在以下三个位置对目标资源进行控制：
 
+1.  访问目标资源前
+2.  访问目标资源后
+3.  页面完成渲染后
 
-## 杂项
+拦截器执行流程：
 
-### 编码过滤器
+![image-20201109190204693](_images/image-20201109190204693.png)
 
-默认情况下，get请求可以自动转换编码，而Post请求默认不处理。Spring框架提供了转换编码的过滤器，名为 `CharacterEncodingFilter` 。在web.xml 中配置该过滤器即可自动转换编码。
+### 使用拦截器
 
-web.xml
+使用拦截器非常简单，只要实现SpringMVC 框架提供的 `HandlerInterceptor` 接口即可。该接口提供了三个默认实现的方法，可以分别重写，对以上描述的位置进行拦截成处理。
 
-```xml
-<filter>
-    <filter-name>CharacterEncodingFilter</filter-name>
-    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-    <init-param>
-        <param-name>encoding</param-name>
-        <param-value>UTF-8</param-value>
-    </init-param>
-    <init-param>
-        <param-name>forceRequestEncoding</param-name>
-        <param-value>true</param-value>
-    </init-param>
-    <init-param>
-        <param-name>forceResponseEncoding</param-name>
-        <param-value>true</param-value>
-    </init-param>
-</filter>
-<filter-mapping>
-    <filter-name>CharacterEncodingFilter</filter-name>
-    <servlet-name>DispatcherServlet</servlet-name>
-</filter-mapping>
+**步骤** 
+
+1.  编写一个类，实现 `HandlerInterceptor` 接口。
+
+    ```java
+    public class TestInterceptor implements HandlerInterceptor {
+    
+        // 访问目标资源前拦截
+        @Override
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+            System.out.println("-----------【preHandle】开始-----------");
+            System.out.println("handler.getClass() = " + handler.getClass());
+            System.out.println("-----------【preHandle】结束-----------");
+            return true;
+        }
+    
+        // 访问目标资源后拦截
+        @Override
+        public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+            System.out.println("-----------【postHandle】开始-----------");
+            System.out.println("handler.getClass() = " + handler.getClass());
+            System.out.println("modelAndView = " + modelAndView);
+            System.out.println("-----------【postHandle】结束-----------");
+        }
+    
+        // 渲染页面后拦截
+        @Override
+        public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+            System.out.println("-----------【afterCompletion】开始-----------");
+            System.out.println("handler.getClass() = " + handler.getClass());
+            if (ex != null) {
+                System.out.println("ex = " + ex);
+            } else {
+                System.out.println("无异常");
+            }
+            System.out.println("-----------【afterCompletion】结束-----------");
+        }
+    
+    }
+    
+    ```
+
+    参数说明：
+
+    -   `Object handler` 是目标资源的代理类对象，具体类型为 `org.springframework.web.method.HandlerMethod`
+    -   `ModelAndView modelAndView` 是隐含模型与视图，用于数据的转发及网页渲染
+    -   `Exception ex` 是 DispatcherServlet的 doDispatch方法中可能出现的异常。
+
+2.  在SpringMVC配置文件中配置拦截器
+
+    ```xml
+    <!-- 配置拦截器组，可以配置多个。拦截器的先后顺序是：配置的从上到下顺序 -->
+    <mvc:interceptors>
+        <!-- 配置单个拦截器 -->
+        <mvc:interceptor>
+            <!-- 配置要拦截的路径 -->
+            <mvc:mapping path="/testInterceptor"/>
+            <!-- 配置实现拦截的类（需要继承 HandlerInterceptor 接口 -->
+            <bean class="com.atguigu.interceptor.TestInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+    ```
+
+**测试结果**
+
+```
+-----------【preHandle】开始-----------
+handler.getClass() = class org.springframework.web.method.HandlerMethod
+-----------【preHandle】结束-----------
+Controller中的Handler方法执行！
+-----------【postHandle】开始-----------
+handler.getClass() = class org.springframework.web.method.HandlerMethod
+modelAndView = ModelAndView [view="targetPage"; model={k1=我是value1, k2=我是value2}]
+-----------【postHandle】结束-----------
+页面渲染已完成：ok！！
+-----------【afterCompletion】开始-----------
+handler.getClass() = class org.springframework.web.method.HandlerMethod
+无异常
+-----------【afterCompletion】结束-----------
 ```
 
-### 静态资源与动态资源的放行
+### 单拦截器异常流程
 
-如果SpringMVC使用DispatcherServlet接管所有请求，默认情况下静态请求也会被拦截。这时就需要配置静态请求与动态注解的请求的放行。
+目标方法前返回false的情况：
 
-用法：在mvc专属的Spring配置文件中加入如下注解：
+1.  **目标方法前执行     返回false**
+2.  这是目标方法         不执行
+3.  目标方法之后         不执行
+4.  这是渲染页面         不执行
+5.  页面渲染完成！     不执行
 
-```xml
-<!-- 放行静态资源（使用静态资源默认Handler） -->
-<mvc:default-servlet-handler/>
+目标方法前异常的情况：
 
-<!-- 添加动态资源 -->
-<mvc:annotation-driven/>
+1.  **目标方法前执行     异常**
+2.  这是目标方法         不执行
+3.  目标方法之后         不执行
+4.  这是渲染页面         渲染异常页面
+5.  页面渲染完成！     不执行
+
+目标方法前返回true的情况，目标方法异常
+
+1.  目标方法前执行     返回true
+2.  **这是目标方法         异常**
+3.  目标方法之后         不执行
+4.  这是渲染页面         渲染异常页面
+5.  页面渲染完成！     执行
+
+目标方法前返回true的情况，目标方法后异常
+
+1.  目标方法前执行     返回true
+2.  这是目标方法         执行
+3.  **目标方法之后         异常**
+4.  这是渲染页面         渲染异常页面
+5.  页面渲染完成！     执行
+
+目标方法前返回true的情况，渲染页面异常
+
+1.  目标方法前执行     返回true
+2.  这是目标方法         执行
+3.  目标方法之后         执行
+4.  **这是渲染页面         异常**
+5.  页面渲染完成！     执行
+
+### 多个拦截器执行流程
+
+正常执行流程如下：
+
+preHandler顺序执行；postHandler逆序执行；afterCompletion逆序执行；
+
+1.  `Interceptor1#preHandler`、`Interceptor2#preHandler`、`Interceptor3#preHandler `...
+2.  `Interceptor3#postHandler`、`Interceptor2#postHandler`、`Interceptor1#postHandler`...
+3.  `Interceptor3#afterCompletion`、`Interceptor2#afterCompletion`、`Interceptor1#afterCompletion`...
+
+异常执行流程：
+
+​	如果一个拦截器的 `preHandle()` 方法只要返回了**true**。那么它的 `afterCompletion()` 就会执行。
+
+
+
+## 文件上传下载
+
+SpringMVC对原生的文件上传下载进行了封装，可以实现文件上传下载。
+
+需要依赖包：`commons-fileupload-1.2.1.jar`、`commons-io-1.4.jar`
+
+### 文件上传
+
+1.  Ioc中加入文件上传解析器：`CommonsMultipartResolver` 
+
+    ```xml
+    <!-- id属性值必须为：multipartResolver（SpringMVC底层写死） -->
+    <bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+        <!-- 指定默认编码集 -->
+        <property name="defaultEncoding" value="UTF-8"/>
+        <!-- 最大上传大小 SPEL表达式可计算带下，单位：byte -->
+        <property name="maxUploadSize" value="#{1024*1024*20}"/>
+    </bean>
+    ```
+
+2.  在 Handler 的形参列表中使用 `MultipartFile` 类型参数接收（可用 @RequestParam 接收指定参数）
+
+    ```java
+    @RequestMapping("/upload")
+    public String upload(@RequestParam("username") String username, @RequestParam("photo") MultipartFile photo)
+        throws IOException {
+    
+        System.out.println("用户为：" + username);
+    
+        // 获取表单项的name属性值 getName
+        System.out.println("file.getName() = " + photo.getName());
+    
+        // 获取上传的文件名 getOriginalFilename
+        System.out.println("file.getOriginalFilename() = " + photo.getOriginalFilename());
+    
+        // 使用通道传输到指定位置
+        photo.transferTo(new File("E:/" + photo.getOriginalFilename()));
+    
+        return "/ok.jsp";
+    }
+    ```
+
+>   注意：表单项依然需要设置提交方式为 `post`，且编码格式 `enctype="multipart/form-data"` 
+
+### 文件下载 //todo
+
+
+
+## 异常处理 // todo
+
+在SpringMVC中可以统一处理Handler抛出的异常。
+
+### 局部异常处理：@ExceptionHandler
+
+在Controller中，可以使用注解 `@ExceptionHandler` 标注在**方法**上来处理当前Controller的异常。
+
+-   参数：抛出的异常类型
+-   返回值：错误处理跳转显示的路径
+
+```java
+
 ```
 
+
+
+>   注意：当有多个异常处理方法时，异常的参数越精确越优先调用
+
+### 全局异常处理：@ControllerAdvice
+
+可以通过在Controller类上使用注解@ControllerAdvice，使当前Controller中的异常处理方法成为全局异常处理方法。
+
+```java
+
+```
+
+
+
+>   异常匹配优先顺序：局部优先 --> 精确优化
+
+### 异常映射类：SimpleMappingExceptionResolver
+
+将该异常映射类加入IOC容器中，并配置其中的 `exceptionMappings` 属性，即可将指定一场映射跳转到指定页面。
+
+```xml
+
+```
+
+>   映射地址会交给视图解析器处理，因此可以使用`redirect:`、`forward:` 等前缀。
