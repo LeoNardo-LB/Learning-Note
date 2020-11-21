@@ -14,12 +14,12 @@ Nosql分为四类，分别为
 
     这一类数据库主要会使用到一个哈希表，这个表中有一个特定的键和一个指针指向特定的数据。
 
-    **特点**
+    特点：
 
     - Key/value模型对于IT系统来说的优势在于简单、易部署。  
     - 但是如果DBA只对部分值进行查询或更新的时候，Key/value就显得效率低下了。
 
-    **相关产品**
+    相关产品：
 
     - Tokyo Cabinet/Tyrant,
     - Redis
@@ -31,11 +31,11 @@ Nosql分为四类，分别为
 
     这部分数据库通常是用来应对分布式存储的海量数据。
 
-    **特点**
+    特点：
 
     - 键仍然存在，但是它们的特点是指向了多个列。这些列是由列家族来安排的。
 
-    **相关产品**
+    相关产品：
 
     - Cassandra、HBase、Riak.
 
@@ -43,11 +43,11 @@ Nosql分为四类，分别为
 
     文档型数据库的灵感是来自于Lotus Notes办公软件的，而且它同第一种键值存储相类似该类型的数据模型是版本化的文档，半结构化的文档以特定的格式存储，比如JSON。文档型数据库可 以看作是键值数据库的升级版，允许之间嵌套键值。而且文档型数据库比键值数据库的查询效率更高
 
-    **特点**
+    特点：
 
     - 以文档形式存储
 
-    **相关产品**
+    相关产品：
 
     - MongoDB、CouchDB、 MongoDb(4.x). 国内也有文档型数据库SequoiaDB，已经开源。
 
@@ -55,7 +55,7 @@ Nosql分为四类，分别为
 
     图形结构的数据库同其他行列以及刚性结构的SQL数据库不同，它是使用灵活的图形模型，并且能够扩展到多个服务器上。
 
-    **相关产品**
+    相关产品：
 
     - Neo4J、InfoGrid、 Infinite Graph、
 
@@ -106,15 +106,47 @@ linux安装步骤如下：
 
 1.  解压 redis 的 gz 文件
 
-    tar -zxvf redis-4.0.10.tar.gz
+    ```bash
+    tar -zxvf redis-5.0.5.tar.gz -C <要解压的目录>
+    ```
 
 2.  进入解压好的文件夹，编译并安装redis文件
 
-    make && make install
+    ```bash
+    make MALLOC=libc
+    make install PREFIX=<要安装的目录>
+    ```
+    
+3.  配置环境变量
 
-### 启动redis
+    ```bash
+    # 1. 编辑 环境变量
+    vim /etc/profile
+    
+    # 2. 添加环境变量
+    export REDIS_HOME=<redis的安装目录>
+    export PATH=$PATH:$REDIS_HOME/bin
+    
+    # 3. 刷新profile文件
+    source /etc/profile
+    ```
 
-安装好redis后，发现redis的目录下多了一个src目录，该目录就是redis编译安装完成之后的目录，有关redis服务启动，客户端启动的文件都在此目录下。
+4.  可以设置后台启动，更改其配置文件 `redis.conf`
+
+    ```bash
+    daemonize yes
+    ```
+
+    然后启动 `redis-server` 时以指定配置文件启动
+
+    ```bash
+    # 假设 redis.conf 在安装目录下
+    /usr/local/redis/bin/redis-server /redis/local/redis/bin/redis.conf
+    ```
+
+### 使用 Redis
+
+安装好redis后，发现redis的安装目录下多了一个src目录，该目录就是redis编译安装完成之后的目录，有关redis服务启动，客户端启动的文件都在此目录下。
 
 #### 启动redis的服务端
 
@@ -147,26 +179,60 @@ linux安装步骤如下：
 ./redis-cli  -p 7000 --raw
 ```
 
+### 设置对外开放
 
+开放连接：找到redis.conf 文件，更改如下配置；
 
-## Redis 自动启动及对外开放设置
+```bash
+# 绑定指定ip设为空
+bind 0.0.0.0
 
+# 关闭保护模式
+protected-mode no
+```
 
+开放端口：防火墙开放redis的端口
+
+```bash
+firewall-cmd --zone=public --add-port=<redis端口号>/tcp --permanent
+```
+
+>   注意：需要重载防火墙配置 `firewall-cmd --reload`
+
+### 设置开机启动
+
+可以设置redis为开机启动，在 `/etc/rc.d/rc.local` 开机启动命令集中写入如下内容：
+
+```bash
+#让java环境变量在此执行文件执行之前生效。
+source /etc/profile 
+
+# 启动redis，指定配置文件，假设 redis.conf 在安装目录下
+/usr/local/redis/bin/redis-server /usr/local/redis/redis.conf
+```
+
+然后给予该文件执行权限
+
+```bash
+chmod +x /etc/rc.d/rc.local
+```
 
 
 
 ## Redis 数据库指令
 
-**Redis数据库说明**
+### Redis数据库说明
 
-redis默认配置有16个库，从编号为从0到15。客户端可以在连接时与进入Redis后使用`select n` 来指定数据库。数据库之间数据相互隔离。
+redis默认配置有16个库，从编号为从0到15。客户端可以在连接时与进入Redis后使用 `select n` 来指定数据库。数据库之间数据相互隔离。
 
-库的数量可以在redis.conf 配置文件中进行修改
+库的数量可以在redis.conf 配置文件中进行修改。
 
 ### 数据库的指令
 
-- 清空当前的库：FLUSHDB
-- 清空全部的库：FLUSHALL
+- 清空当前的库：`FLUSHDB`
+- 清空全部的库：`FLUSHALL`
+- 查看库的键值对数量：`DBSIZE`
+- 切换库：`SELECT <db:number>`
 
 ### 操作key相关指令
 
@@ -174,23 +240,23 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 ![image-20201018152804836](_images/image-20201018152804836.png)
 
-**DEL指令**
+**DEL**
 
-- 语法 :  DEL key [key ...] 
+- 语法 :  `DEL <key> [key ...] `
 - 作用 :  删除给定的一个或多个key 。不存在的key 会被忽略。
 - 可用版本： >= 1.0.0
 - 返回值： 被删除key 的数量。 
 
-**EXISTS指令**
+**EXISTS**
 
-- 语法:  EXISTS key
+- 语法:  `EXISTS <key>`
 - 作用:  检查给定key 是否存在。
 - 可用版本： >= 1.0.0
 - 返回值： 若key 存在，返回1 ，否则返回0。
 
 **EXPIRE**
 
-- 语法:  EXPIRE key seconds
+- 语法:  `EXPIRE <key> <seconds>`
 - 作用:  为给定key 设置生存时间，当key 过期时(生存时间为0 )，它会被自动删除。
 - 可用版本： >= 1.0.0
 - 时间复杂度： O(1)
@@ -198,7 +264,7 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 **PEXPIRE**
 
-- 语法 :  PEXPIRE key milliseconds
+- 语法 :  `PEXPIRE <key> <milliseconds>`
 - 作用 :  这个命令和EXPIRE 命令的作用类似，但是它以毫秒为单位设置key 的生存时间，而不像EXPIRE 命令那样，以秒为单位。
 - 可用版本： >= 2.6.0
 - 时间复杂度： O(1)
@@ -206,14 +272,19 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 **PEXPIREAT**
 
-- 语法 :  PEXPIREAT key milliseconds-timestamp
+- 语法 :  `PEXPIREAT <key> <milliseconds-timestamp>`
 - 作用 :  这个命令和EXPIREAT 命令类似，但它以毫秒为单位设置key 的过期unix 时间戳，而不是像EXPIREAT那样，以秒为单位。
 - 可用版本： >= 2.6.0
 - 返回值：如果生存时间设置成功，返回1 。当key 不存在或没办法设置生存时间时，返回0 。(查看EXPIRE 命令获取更多信息)
 
+**PERSIST**
+
+-   语法：`PERSIST <key>`
+-   作用：清除存活时间（使之变为永久）
+
 **TTL**
 
-- 语法 :   TTL key
+- 语法 :   `TTL <key>`
 - 作用 :   以秒为单位，返回给定key 的剩余生存时间(TTL, time to live)。
 - 可用版本： >= 1.0.0
 - 返回值：
@@ -224,7 +295,7 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 **PTTL**
 
-- 语法 :  PTTL key
+- 语法 :  `PTTL <key>`
 - 作用 :  这个命令类似于TTL 命令，但它以毫秒为单位返回key 的剩余生存时间，而不是像TTL 命令那样，以秒为单位。
 - 可用版本： >= 2.6.0
 - 返回值： 当key 不存在时，返回-2 。当key 存在但没有设置剩余生存时间时，返回-1 。
@@ -233,9 +304,9 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 **KEYS**
 
-- 语法 :  KEYS pattern
+- 语法 :  `KEYS <pattern>`
 - 作用 :  查找所有符合给定模式pattern 的key 。
-- 语法:
+- 语法 :
 
 	KEYS * 匹配数据库中所有key 。
 	KEYS h?llo 匹配hello ，hallo 和hxllo 等。
@@ -246,28 +317,28 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 
 **MOVE**
 
-- 语法 :  MOVE key db
+- 语法 :  `MOVE <key> <db>`
 - 作用 :  将当前数据库的key 移动到给定的数据库db 当中。
 - 可用版本： >= 1.0.0
 - 返回值： 移动成功返回1 ，失败则返回0 。
 
 **RANDOMKEY**
 
-- 语法 :  RANDOMKEY
+- 语法 :  `RANDOMKEY`
 - 作用 :  从当前数据库中随机返回(不删除) 一个key 。
 - 可用版本： >= 1.0.0
 - 返回值：当数据库不为空时，返回一个key 。当数据库为空时，返回nil 。
 
 **RENAME**
 
-- 语法 :  RENAME key newkey
+- 语法 :  `RENAME <key> <newkey>`
 - 作用 :  将key 改名为newkey 。当key 和newkey 相同，或者key 不存在时，返回一个错误。当newkey 已经存在时，RENAME 命令将覆盖旧值。
 - 可用版本： >= 1.0.0
 - 返回值： 改名成功时提示OK ，失败时候返回一个错误。
 
 **TYPE**
 
-- 语法 :  TYPE key
+- 语法 :  `TYPE <key>`
 - 作用 :  返回key 所储存的值的类型。
 - 可用版本： >= 1.0.0
 - 返回值：
@@ -293,25 +364,25 @@ Redis的数据类型可以分为5种，分别为 String，List，Set，ZSet与Ha
 
 #### 常用操作命令
 
-| 命令                                 | 简略说明                                               |
-| ------------------------------------ | ------------------------------------------------------ |
-| **set** key value                    | 设置一个key/value                                      |
-| **get** key                          | 根据key获得对应的value                                 |
-| **mset** key value [key value ...]   | 一次设置多个key value                                  |
-| **mget** key value [key value ...]   | 一次获得多个key的value                                 |
-| **getset** key value                 | 获得原始key的值，同时设置新值                          |
-| **strlen** value                     | 获得对应key存储value的长度                             |
-| **append** key value                 | 为对应key的value追加内容                               |
-| **getrange** key start end           | 截取value的内容 [begin, end] （索引0开始）             |
-| **setex** key seconds value          | 设置一个key存活的有效期（秒）                          |
-| **psetex** key seconds value         | 设置一个key存活的有效期（毫秒）                        |
-| **setnx** key value                  | 存在不做任何操作,不存在添加                            |
-| **msetnx** key value [key value ...] | 可以同时设置多个key,只有有一个存在都不保存（原子操作） |
-| **decr** key                         | 进行数值类型的-1操作                                   |
-| **decrby** key decrement             | 根据提供的数据进行减法操作                             |
-| **Incr** key                         | 进行数值类型的+1操作                                   |
-| **incrby** key increment             | 根据提供的数据进行加法操作                             |
-| **incrbyfloat** key increment        | 根据提供的数据加入浮点数                               |
+| 命令                                 | 简略说明                                                |
+| ------------------------------------ | ------------------------------------------------------- |
+| **set** key value                    | 设置一个key/value                                       |
+| **get** key                          | 根据key获得对应的value                                  |
+| **mset** key value [key value ...]   | 一次设置多个key value                                   |
+| **mget** key value [key value ...]   | 一次获得多个key的value                                  |
+| **getset** key value                 | 获得原始key的值，同时设置新值                           |
+| **strlen** value                     | 获得对应key存储value的长度                              |
+| **append** key value                 | 为对应key的value追加内容                                |
+| **getrange** key start end           | 截取value的内容 [begin, end] （索引0开始）              |
+| **setex** key seconds value          | 设置一个key存活的有效期（秒）                           |
+| **psetex** key seconds value         | 设置一个key存活的有效期（毫秒）                         |
+| **setnx** key value                  | 不存在则添加，存在则不做任何操作                        |
+| **msetnx** key value [key value ...] | 可以同时设置多个key，只有有一个存在都不保存（原子操作） |
+| **decr** key                         | 进行数值类型的-1操作                                    |
+| **decrby** key decrement             | 根据提供的数据进行减法操作                              |
+| **Incr** key                         | 进行数值类型的+1操作                                    |
+| **incrby** key increment             | 根据提供的数据进行加法操作                              |
+| **incrbyfloat** key increment        | 根据提供的数据加入浮点数                                |
 
 ###  List类型
 
@@ -418,6 +489,122 @@ list 列表 相当于java中list 集合。
 
 
 
+## Redis 配置文件
+
+### 引入其他配置
+
+| 配置名称                     | 配置说明                                           |
+| ---------------------------- | -------------------------------------------------- |
+| include  /path/to/local.conf | 指定包含其它的配置文件，通常包含公共的配置文件即可 |
+
+### 网络相关
+
+| 配置相关           | 配置说明                                                     |
+| ------------------ | ------------------------------------------------------------ |
+| port 6379          | 指定Redis监听端口，默认端口为6379                            |
+| bind 127.0.0.1     | 设置可以连接该redis服务器的客户端ip地址，多个ip之间用空格隔开，默认127.0.0.1只能接受本机客户端的访问请求，设置为0.0.0.0  则为所有网络都可以连接 |
+| protected-mode yes | 保护模式默认是开启的，如果要关闭，设置为no就可以了,设置为no之后外部网络可以访问本机的redis服务器 |
+| timeout 300        | 设置超时，客户端闲置等待最大时长，达到最大值后关闭连接，默认是0，表示永不超时,如需关闭该功能，设置为0 |
+| tcp-keepalive      | 心跳检查机制，如果值非0，单位是秒，表示将周期性的使用SO_KEEPALIVE检测客户端是否还处于健康状态，避免服务器一直阻塞，官方给出的建议值是300s |
+| tcp-backlog        | 设置tcp的backlog，backlog其实是一个连接队列，backlog队列总和=未完成三次握手队列  + 已经完成三次握手队列。在高并发环境下你需要一个高backlog值来避免慢客户端连接问题 |
+
+### 通用设置
+
+| 配置相关                  | 配置说明                                                     |
+| ------------------------- | ------------------------------------------------------------ |
+| daemonize no              | 设置Redis服务端是否以守护进程的方式（后台运行）启动，yes表示以守护进程启动，no表示从控制台启动 |
+| pidfile  /var/run/redis.p | 当Redis以守护进程方式运行时，Redis默认会把pid写入/var/run/redis.pid文件 |
+| loglevel notice           | 指定日志记录级别，Redis总共支持四个级别：debug、verbose、notice、warning     日志级别开发期设置为verbose即可，生产环境中配置为notice,简化日志输出量，降低写日志IO的频度 |
+| logfile  ""               | 当redis以守护进程方式运行时，Redis会把pid写入/dev/null，以控制台启动的时候，会将日志写到控制台上 |
+| databases 16              | 设置数据库的数量，可以使用SELECT  <dbid>命令切换库，dbid取值为:0至databases-1 |
+| dir <目录位置>            | 设定 快照文件 RDB 的保存位置。                               |
+
+### 安全设置（验证）
+
+| 配置相关              | 配置说明                                                     |
+| --------------------- | ------------------------------------------------------------ |
+| requirepass  foobared | 设置密码，如果配置了连接密码，客户端在连接Redis时需要通过AUTH  <password>命令提供密码，默认关闭 |
+
+### 客户端设置
+
+| 配置相关         | 配置说明                     |
+| ---------------- | ---------------------------- |
+| maxclients 10000 | 设置同一时间最大客户端连接数 |
+
+### 内存管理
+
+| 配置相关                     | 配置说明                                                     |
+| ---------------------------- | ------------------------------------------------------------ |
+| maxmemory  <bytes>           | 指定Redis最大内存限制,Redis在启动时会把数据加载到内存中      |
+| maxmemory-policy  <strategy> | 内存驱逐策略                                                 |
+| maxmemory-samples            | 设置样本数量，LRU算法和最小TTL算法都并非是精确的算法，而是估算值 |
+
+内存驱逐策略说明：
+
+| 取值            | 说明                                                         |
+| --------------- | ------------------------------------------------------------ |
+| volatile-lru    | 使用LRU算法，从设置了ttl的key中,选择最近最久未使用的数据予以淘汰 |
+| allkeys-lru     | 使用LRU算法，从所有key中[不限于是否设置了ttl过期时间]选择删除 |
+| volatile-lfu    | 使用LFU算法，从设置了ttl的key中，将最小频率访问的数据最先被淘汰 |
+| allkeys-lfu     | 使用LFU算法，从所有key中[不限于是否设置了ttl过期时间]选择删除 |
+| volatile-random | 从设置了ttl的key中,随机删除                                  |
+| allkeys-random  | 从所有key中,随机删除                                         |
+| volatile-ttl    | 从设置了过期时间的key中选择最先过期的删除                    |
+| noeviction      | Redis的默认策略是 noeviction,不处理，当有写操作时，直接返回错误 |
+
+
+
+## Redis 事务
+
+Redis的事务类似于批处理命令，串联多个指令，依次执行。在执行的时候，其他指令无法执行。与传统数据库的事务有所不同。主要逻辑由`MULTI/EXEC/DISCARD` 控制。
+
+-   `multi` 开启事务
+-   `exec` 执行事务
+-   `discard` 手动取消事务（组队阶段）
+
+### 事务生命周期
+
+Redis的事务可以分为两个阶段
+
+1.  组队阶段：依次输入待执行的指令
+2.  执行阶段：依次执行已输入的指令（已组队的）
+
+![image-20201117094352908](_images/image-20201117094352908.png)
+
+在组队阶段出错时，事务会进行回滚（事务回滚/取消）
+
+![image-20201117094815135](_images/image-20201117094815135.png)
+
+在执行阶段出错时，会跳过出错的命令，执行正确的命令（事务不生效）
+
+![image-20201117094820490](_images/image-20201117094820490.png)
+
+### Redis 锁机制
+
+Redis的事务采用的是加版本号的乐观锁机制，即当一个事务被修改过程中，修改之前先保存当前版本号v1，要修改的时候（执行update的时候）再查看一次版本号：如果版本号一致则修改，同时更新版本号；若版本号不一致则说明其他事务已经执行，则本事务不执行。
+
+在Redis中，使用 `WATCH <key>` 监视某个key，实现乐观锁（在事务开启之前）。
+
+![image-20201117095808847](_images/image-20201117095808847.png)
+
+### Redis 事务特性
+
+-   单独的隔离操作
+
+    事务中的所有命令都会序列化、按顺序地执行。
+
+    事务在执行的过程中，不会被其他客户端发送来的命令请求所打断。
+
+-   没有隔离级别的概念
+
+    队列中的命令没有提交之前都不会实际被执行，因为事务提交前任何指令都不会被实际执行
+
+-   不保证原子性[不要么同时成功，要么同时失败]
+
+    事务中如果有一条命令执行失败，其后的命令仍然会被执行，没有回滚
+
+
+
 ## Redis 持久化机制
 
 持久化：Client redis（内存） ==> 硬盘
@@ -445,7 +632,7 @@ Redis 提供了两种持久化的方法：
 
 客户端可以使用 `BGSAVE` 命令来创建一个快照，当接收到客户端的BGSAVE命令时，redis会调用fork来创建一个子进程，然后子进程负责将快照写入磁盘中，而父进程则继续处理命令请求。
 
->   名词解释: fork当一个进程创建子进程的时候,底层的操作系统会创建该进程的一个副本,在类unix系统中创建子进程的操作会进行优化:在刚开始的时候,父子进程共享相同内存,直到父进程或子进程对内存进行了写之后,对被写入的内存的共享才会结束服务 
+>   名词解释：fork当一个进程创建子进程的时候，底层的操作系统会创建该进程的一个副本，在类unix系统中创建子进程的操作会进行优化：在刚开始的时候，父子进程共享相同内存，直到父进程或子进程对内存进行了写之后，对被写入的内存的共享才会结束服务。
 
 ![image-20200623205132460](_images/image-20200623205132460.png)
 
@@ -523,6 +710,8 @@ appendfilename "appendonly.aof"
 
 ![image-20200623211508987](_images/image-20200623211508987.png)
 
+>   注意：当AOF与RDB都开启时，优先使用AOF恢复数据
+
 #### 设置 AOF 日志追加频率
 
 在Redis配置文件中可以设置 AOF 日志的追加频率
@@ -550,7 +739,7 @@ appendfilename "appendonly.aof"
 
 AOF的方式也同时带来了另一个问题。持久化文件会变的越来越大。例如我们调用incr test命令100次，文件中必须保存全部的100条命令，其实有99条都是多余的。因为要恢复数据库的状态其实文件中保存一条set test 100就够了。为了压缩aof的持久化文件Redis提供了AOF重写(ReWriter)机制。利用 **AOF 重写** 可以在一定程度上减小AOF文件的体积。
 
-**AOF重写方式可以分为：**
+AOF重写方式可以分为：
 
 -   客户端命令重写
 
@@ -564,7 +753,7 @@ AOF的方式也同时带来了另一个问题。持久化文件会变的越来�
 
 修改Redis的配置文件
 
--   auto-aof-rewrite-min-size：重写首次出发阈值
+-   auto-aof-rewrite-min-size：首次重写触发的阈值
 
 - auto-aof-rewrite-percentage：每次重写后，重写阈值的百分比
 
@@ -1174,11 +1363,22 @@ API：`public static byte[] md5Digest(byte[] bytes)` 传入byte数组，返回�
 
 	port 6379
 	bind 0.0.0.0
-**slave**（Redis5.0之后更名为Replica）：需要额外配置一个参数： `replicaof` ，来指定需要同步的Master
+**Replica**（Redis5.0之前为slave）：需要额外配置一个参数： `replicaof` ，来指定需要同步的Master
 
 ```bash
-port 6381
+# 启动端口号不同
+port 6380
+
+# 开放连接
 bind 0.0.0.0
+
+# 区别pid目录
+pidfile /var/run/redis_6380.pid
+
+# 区别快照名称
+dbfilename dump6380.rdb
+
+# 配置主服务器
 replicaof <masterip> <masterport>
 ```
 实验：分别对Master与Replica进行写与读操作
@@ -1191,7 +1391,7 @@ Replica：![image-20201022143508556](_images/image-20201022143508556.png)
 
 ## 哨兵机制
 
-Sentinel（哨兵）是Redis 的高可用性解决方案：由一个或多个Sentinel 实例 组成的Sentinel 系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器进入下线状态时，自动将下线主服务器属下的某个从服务器升级为新的主服务器（根据某种规则推举出一个合适的从服务器）。简单的说哨兵就是带有**自动故障转移功能的主从架构**。
+Sentinel（哨兵）是Redis 的高可用性解决方案：由一个或多个Sentinel 实例 组成的Sentinel 系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器进入下线状态时，自动将下线主服务器属下的某个从服务器升级为新的主服务器（根据某种规则推举出一个合适的从服务器）。简单的说哨兵就是带有**自动故障转移功能的主从架构**。（基于主从架构）
 
 **无法解决: 1.单节点并发压力问题   2.单节点内存和磁盘物理上限**
 
@@ -1205,38 +1405,38 @@ Sentinel（哨兵）是Redis 的高可用性解决方案：由一个或多个Sen
 
 若没有收到回应，达到一定阈值，那么哨兵就认为Master有可能宕机了，那么哨兵会做如下操作：
 
-1.  通知Replica停止复制
+1.  通知 Replica 停止复制
 2.  为保证系统高可用，哨兵会在多个从服务器中选取新的Master服务器（投票机制）
 3.  选取完毕之后，让其他所有从节点开始连接新Master，形成新的主从复制关系。
 4.  若原Master恢复了，那么原Master会变成新Master的从节点
 
 ### 哨兵架构的搭建
 
-1.  在Master对应redis.conf同目录下新建sentinel.conf文件，名字绝对不能错
+1.  在Master对应redis.conf同目录下新建 `sentinel.conf` 文件，名字绝对不能错
 
-2.  配置哨兵，在sentinel.conf文件中填入内容：
+2.  配置哨兵，在 `sentinel.conf` 文件中填入内容：
 
     ```bash
-    sentinel monitor <被监控的主从架构的名字（自己起名字）> <ip> <port> <1>
+    sentinel monitor <被监控的主从架构的名字/哨兵的名称（自己起名字）> <ip> <port> <1>
     # 自己起的名字：可能日后有多个哨兵，名称用于区分不同哨兵与其架构
     # ip：被监控的Master的ip
     # port：被监控的Master的端口 
-    # 1：代表整个哨兵系统中哨兵的数量，是多哨兵监控Master是否健康检测的阈值，如果 哨兵认为当即的数量 多于 该数量/2，则会发起选举新Master的投票
+    # 1：代表整个哨兵系统中哨兵的数量，是多哨兵监控Master是否健康检测的阈值，如果 认为宕机的哨兵的数量 多于 该数量/2，则会发起选举新Master的投票
     ```
 
-    >   一条该语句对应一个被监控的主Master，可以有多个
+    >   一条该语句对应一个哨兵，可以有多个哨兵
 
 3.  启动哨兵服务
 
-    进入redis解压目录/src下，有一个文件叫做 `redis-sentinel` ，启动即可。（也可以指定配置文件启动）
-
-    ![image-20201022154657118](_images/image-20201022154657118.png)
+    ```bash
+redis-sentinel <sentinel.conf 文件的路径>
+    ```
 
 #### 测试
 
 1.  先启动主从架构![image-20201022155333640](_images/image-20201022155333640.png)
 
-2.  启动sentinel：src/redis-sentinel sentinel.conf
+2.  启动 sentinel：`src/redis-sentinel sentinel.conf`
 
     输出信息：
 
@@ -1268,6 +1468,7 @@ Sentinel（哨兵）是Redis 的高可用性解决方案：由一个或多个Sen
     2534:X 22 Oct 2020 15:55:25.607 * +slave-reconf-inprog slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
     2534:X 22 Oct 2020 15:55:25.607 * +slave-reconf-done slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6379
     2534:X 22 Oct 2020 15:55:25.691 # +failover-end master mysentinel 192.168.72.129 6379
+    # 此语句表明选出了新的Master
     2534:X 22 Oct 2020 15:55:25.691 # +switch-master mysentinel 192.168.72.129 6379 192.168.72.129 6381
     2534:X 22 Oct 2020 15:55:25.691 * +slave slave 192.168.72.129:6380 192.168.72.129 6380 @ mysentinel 192.168.72.129 6381
     2534:X 22 Oct 2020 15:55:25.691 * +slave slave 192.168.72.129:6379 192.168.72.129 6379 @ mysentinel 192.168.72.129 6381
@@ -1314,7 +1515,7 @@ spring.redis.sentinel.nodes=192.168.202.206:26379[,ip:port,ip:port,...]
 
 ## Redis 集群
 
-Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自动发现,支持slave-master选举和容错,支持在线分片（sharding shard）等特性。
+Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自动发现，支持slave-master选举和容错，支持在线分片（sharding shard）等特性。
 
 ![img](_images/OIP.9_XXP3aod_o4znHbJal2sAHaHo)
 
@@ -1333,7 +1534,7 @@ Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自
 
 1.  集群模式下对所有Key进行CRC16算法，计算的值始终在 0~16383之间
 2.  客户端访问的物理节点是根据CRC16算法计算的值而定（通过重定向）。
-3.  同一个key经过CRC16计算后，结果始终一致。
+3.  **同一个key经过CRC16计算后，结果始终一致。**
 4.  对客户端不同的key进行计算时，计算的结果有可能一致
 
 ### 搭建集群
@@ -1347,22 +1548,42 @@ Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自
 2.  修改每个集群的配置文件（最小配置文件）
 
     ```bash
-    port 7000	//修改端口
-    bind 0.0.0.0	//开启远程连接
-    daemonize yes	//后台运行模式
-    dir /目录路径	//指定数据文件存放位置，不同目录必须指定不同的位置，不然会丢失数据
-    cluster-enabled yes	//开启集群模式
-    cluster-config-file nodes-<port>.conf	//集群节点配置文件
-    cluster-node-timeout 5000	//集群节点超时时间
-    protected-mode no	//关闭保护模式
-    appendonly yes	//开启AOF持久化
+    # 修改端口
+    port 7000
+    
+    # 开启远程连接
+    bind 0.0.0.0
+    
+    # 后台运行模式
+    daemonize yes
+    
+    # 指定数据文件存放位置，不同目录必须指定不同的位置，不然会丢失数据
+    dir <目录路径>
+    
+    # 开启集群模式
+    cluster-enabled yes
+    
+    # 输出集群节点配置文件(自动创建)
+    cluster-config-file nodes-<port>.conf
+    
+    # 集群节点超时时间 
+    cluster-node-timeout 5000
+    
+    # 关闭保护模式
+    protected-mode no
+    
+    # 开启AOF持久化
+    appendonly yes
+    
+    # 配置pid输出目录
+    pidfile <target>
     
     # 如果需要密码
-    requirepass xxx (设置redis访问密码)
-    masterauth xxx (设置集群节点间访问密码，跟上面一致)
+    requirepass <password> #设置redis访问密码
+    masterauth <password> #设置集群节点间访问密码，跟上面一致
     ```
 
-3.  将每个服务器根据集群配置的文件启动集群
+3.  将每个服务器根据集群配置的文件启动集群，可以写入一个shell脚本中，方便启动
 
 4.  启动集群，输入以下指令：redis-cli --cluser create  host1:port1 ... hostN:portN --cluster-replicas <arg>  启动集群（arg为从节点个数）
 
@@ -1384,6 +1605,8 @@ Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自
 
 ### 节点宕机测试
 
+说明：当Master节点宕机之后，Slave节点就会顶上来顶替Master节点称为新的Master节点。如果宕机的原Master节点再次加入集群，则会成为Slave节点。
+
 使7000端口的节点宕机
 
 ![image-20201023184736423](_images/image-20201023184736423.png)
@@ -1394,7 +1617,7 @@ Redis在3.0后开始支持Cluster模式，目前redis的集群支持节点的自
 
 ### 集群命令
 
-以 `--cluster` 为前缀
+以 `redis-cli --cluster` 为前缀
 
 ```bash
 create         host1:port1 ... hostN:portN   #创建集群
@@ -1434,11 +1657,13 @@ import         host:port                                      #将外部redis数
 
 ### 客户端连接集群
 
-指令：./redis-cli -h <主机地址> -p <任意集群节点> -c
+指令：`./redis-cli -h <主机地址> -p <任意集群节点> -c` 其中，`-c` 代表 cluster 的意思。
 
 ```bash
 ./redis-cli -p7000 -c
 ```
+
+### 批量写入数据
 
 ### 集群的操作
 

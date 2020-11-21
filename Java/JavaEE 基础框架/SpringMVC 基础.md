@@ -37,11 +37,13 @@ HandlerMapping负责根据用户请求url找到Handler即处理器，springmvc�
 
 View Resolver负责将处理结果生成View视图，View Resolver首先根据逻辑视图名解析成物理视图名即具体的页面地址，再生成View视图对象，最后对View进行渲染将处理结果通过页面展示给用户。这货就是解析modelAndView的。有个常用最简单的功能就是拼接字符串，给你加个前缀后缀，让你方便了很多，当然他们解析很多类型的视图。
 
-### 执行流程
+### 简略的执行流程
 
 ![image-20201106200253800](_images/image-20201106200253800.png)
 
+### 详细的执行流程
 
+![image-20201110200809391](_images/image-20201110200809391.png)
 
 ## SpringMVC 单项配置文件
 
@@ -107,10 +109,6 @@ View Resolver负责将处理结果生成View视图，View Resolver首先根据�
 
 
 
-
-
-
-
 ## SpringMVC Handler注解
 
 ### @Controller
@@ -158,13 +156,120 @@ public String testReturnString() {
 
 ### @ResponseBody
 
+该注解多用于标注在方法上，用于直接返回对象。默认情况下直接返回一个对象的序列化，实际开发中多以json格式返回，这就需要用到json转换的实现类，一般从外部导入。这里使用的是jackon实现json的转换。
 
+-   jackson-annotations-2.10.3.jar
+-   jackson-core-2.10.3.jar
+-   jackson-databind-2.10.3.jar
+
+**简单示例**
+
+```java
+// 返回Pojo对象
+@ResponseBody
+@RequestMapping("/getPojo")
+public Person getPerson() {
+    return new Person(12, "Leonardo", new Pet("coco", "dog"));
+}
+
+// 返回Map
+@ResponseBody
+@RequestMapping("/getMap")
+public Map getMap() {
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("root", "123456");
+    map.put("user", "asdzxc");
+    return map;
+}
+
+// 返回List集合
+@ResponseBody
+@RequestMapping("/getList")
+public List getList() {
+    HashMap<String, Object> map1 = new HashMap<>();
+    map1.put("root", "123456");
+    HashMap<String, Object> map2 = new HashMap<>();
+    map2.put("user", "asdzxc");
+    Person person = new Person(12, "Leonardo", new Pet("coco", "dog"));
+    List<Object> list = Arrays.asList(map1, map2, person);
+    return list;
+}
+```
+
+网页端使用Ajax发送，接收到服务器的回应为：
+
+![image-20201110182705813](_images/image-20201110182705813.png)
 
 ### @RequestBody
 
+该注解多用于标注在Handler的形参上，用于指示接收的Json字符串转为该形参。
 
+前端代码
+
+```js
+$('button:eq(4)').click(function () {
+
+    var person = {
+        "id": 123,
+        "name": "leonardo",
+        "pet": {
+            "petName": "coco",
+            "petKind": "dog"
+        }
+    }
+    let jsonPerson = JSON.stringify(person);
+    console.log(jsonPerson);
+    $.ajax({
+        url: "${pageContext.request.contextPath}/req/receiveData",
+        data: jsonPerson,
+        contentType: "application/json",
+        dataType: "json",
+        type: "post"
+    })
+
+})
+```
+
+>   注意：需要设置 `contentType: "application/json"` 才能被服务器识别
+
+Handler代码：
+
+```java
+@ResponseBody
+@RequestMapping("/req/receiveData")
+public String receiveData(@RequestBody Person person) {
+    
+    System.out.println("person = " + person);
+    
+    return "{\"state\":1}";
+}
+```
 
 ### HttpMessageConverter 原理
+
+-   HttpMessageConverter<T> 是 Spring3.0 新添加的一个接口，负责将请求信息转换为一个对象（类型为 T），将对象（类型为 T）输出为响应信息
+
+    ![img](_images/img.png)
+
+-   HttpMessageConverter<T> 接口定义的方法：
+
+| 方法名 | 方法说明 |
+| ------ | ------ |
+|Boolean canRead(Class<?> clazz,MediaType mediaType)|指定转换器可以读取的对象类型，即转换器是否可将请求信息转换为 clazz 类型的对象，同时指定支持 MIME 类型(text/html,applaiction/json等)|
+|Boolean canWrite(Class<?> clazz,MediaType mediaType)|指定转换器是否可将 clazz 类型的对象写到响应流中，响应流支持的媒体类型在MediaType 中定义。|
+|List<MediaType> getSupportMediaTypes()|该转换器支持的媒体类型。|
+|T read(Class<? extends T> clazz,HttpInputMessage inputMessage)|将请求信息流转换为 T 类型的对象。|
+|void write(T t,MediaType contnetType,HttpOutputMessgae outputMessage)|将T类型的对象写到响应流中，同时指定相应的媒体类型为 contentType。|
+
+-   如果需要自定义HttpMessageConverter消息转换器，可以通过继承 org.springframework.http.converter.AbstractHttpMessageConverter<T> 类来实现
+
+    重写的方法：
+
+| 方法名 | 方法说明 |
+| ------ | ------ |
+|T readInternal(Class<? extends Person> clazz, HttpInputMessage inputMessage) |将客户端消息转换成为服务器需要的类型|
+|boolean supports(Class<?> clazz)  |判断是否支持对指定类型的处理|
+|void writeInternal(Person person, HttpOutputMessage outputMessage) |将Controller控制器返回类型转换为客户端需要的数据|
 
 
 
@@ -309,7 +414,6 @@ public class Car{
 
 ```java
 // 客户端参数：id=1&username=nardo&salary=12345&car.id=zjg123&car.type=五菱宏光
-
 @RequestMapping("/test6")
 public String param6(Person p) {
     System.out.println("p级联属性赋值 = " + p);
@@ -769,9 +873,7 @@ preHandler顺序执行；postHandler逆序执行；afterCompletion逆序执行�
 2.  `Interceptor3#postHandler`、`Interceptor2#postHandler`、`Interceptor1#postHandler`...
 3.  `Interceptor3#afterCompletion`、`Interceptor2#afterCompletion`、`Interceptor1#afterCompletion`...
 
-异常执行流程：
-
-​	如果一个拦截器的 `preHandle()` 方法只要返回了**true**。那么它的 `afterCompletion()` 就会执行。
+异常执行流程：如果一个拦截器的 `preHandle()` 方法只要返回了**true**。那么它的 `afterCompletion()` 就会执行。
 
 
 
@@ -819,47 +921,131 @@ SpringMVC对原生的文件上传下载进行了封装，可以实现文件上�
 
 >   注意：表单项依然需要设置提交方式为 `post`，且编码格式 `enctype="multipart/form-data"` 
 
-### 文件下载 //todo
+### 文件下载
 
+在SpringMVC中可以通过返回 `ResponseEntity` 来进行文件下载。`ResponseEntity` 可以设置响应头、响应行、响应体。
 
+>   实际上 `ResponseEntity` 可以用来设置返回给客户端的各种信息的，这里用来下载。
 
-## 异常处理 // todo
+```java
+@Controller
+public class DownloadController {
+
+    @Autowired
+    ServletContext servletContext;
+
+    @RequestMapping("/download")
+    public ResponseEntity<byte[]> download() throws Exception {
+        System.out.println("start to download...");
+        String path = "E:\\_atguigu\\06 SpringMVC\\SpringMVC-day04\\视频\\03-SpringMVC 之 @ResponseBody注解将返回值转换为json字符串.avi";
+        int index = path.lastIndexOf('\\');
+        String fileName = path.substring(index + 1);
+
+        // 获取资源的类型
+        String mimeType = servletContext.getMimeType(path);
+
+        // 读取资源
+        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(path));
+
+        // http响应体：下载的内容就
+        byte[] downloadByteArray = IOUtils.toByteArray(inputStream);
+
+        // http响应头
+        HttpHeaders headers = new HttpHeaders();
+        // 设置返回的数据类型
+        headers.add("Content-Type", mimeType);
+        // 设置响应头，告诉浏览器收到的数据统一以附件的形式用于下载
+        headers.add("Content-Disposition","attachment; filename=" + fileName);
+
+        // 包装成 ResponseEntity 实体类返回
+        return new ResponseEntity<byte[]>(downloadByteArray,headers, HttpStatus.OK );
+
+    }
+
+}
+```
+
+关于 `ResponseEntity` 对象的创建，需要传入三个参数，分别为：
+
+1.  响应体，下载的话是下载的字节数组。
+
+2.  响应头，需要规定相应响应头，用来告诉客户端下载操作。
+
+3.  响应状态码，由 HttpStatus 枚举类来取值即可
+
+    
+
+## 异常处理
 
 在SpringMVC中可以统一处理Handler抛出的异常。
 
 ### 局部异常处理：@ExceptionHandler
 
-在Controller中，可以使用注解 `@ExceptionHandler` 标注在**方法**上来处理当前Controller的异常。
+在Controller中，可以使用注解 `@ExceptionHandler` 标注在**方法**上来处理当前Controller的异常。以下是必须存在的两项：
 
--   参数：抛出的异常类型
+-   参数：抛出的异常类型，可以指定多个。
 -   返回值：错误处理跳转显示的路径
 
 ```java
+@RequestMapping("/test1")
+public String test1() {
+    // 模拟出错
+    int i = 10 / 0;
+    return "ok";
+}
 
+@ExceptionHandler
+public String error01(Exception e) {
+    System.out.println("【error01】 接收 Exception 类型的参数");
+    return "error/error01";
+}
 ```
 
-
-
->   注意：当有多个异常处理方法时，异常的参数越精确越优先调用
+>   注意：当有多个异常处理方法时，异常的参数越精确越优先调用，以上例子的优先级：ArithmeticException > RuntimeException > Exception
 
 ### 全局异常处理：@ControllerAdvice
 
-可以通过在Controller类上使用注解@ControllerAdvice，使当前Controller中的异常处理方法成为全局异常处理方法。
+可以通过在Controller类上使用注解 `@ControllerAdvice` ，使当前Controller中的异常处理方法成为全局异常处理方法。
 
 ```java
+@ControllerAdvice
+@Controller
+public class ControllerAdviceController {
 
+    @ExceptionHandler
+    public String error01(Exception e) {
+        System.out.println("【error01】 接收 Exception 类型的参数");
+        return "error/error01";
+    }
+
+    @ExceptionHandler
+    public String error02(RuntimeException e) {
+        System.out.println("【error02】 接收 RuntimeException 类型的参数");
+        return "error/error02";
+    }
+
+}
 ```
 
-
-
->   异常匹配优先顺序：局部优先 --> 精确优化
+>   异常匹配优先顺序：局部优先 --> 全局精确优先
 
 ### 异常映射类：SimpleMappingExceptionResolver
 
 将该异常映射类加入IOC容器中，并配置其中的 `exceptionMappings` 属性，即可将指定一场映射跳转到指定页面。
 
-```xml
+-   key：异常类型
+-   标签体：跳转路径
 
+```xml
+<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+    <property name="exceptionMappings">
+        <props>
+            <prop key="java.lang.Exception">error/error1</prop>
+            <prop key="java.lang.RuntimeException">error/error2</prop>
+            <prop key="java.lang.ArithmeticException">error/error3</prop>
+        </props>
+    </property>
+</bean>
 ```
 
 >   映射地址会交给视图解析器处理，因此可以使用`redirect:`、`forward:` 等前缀。

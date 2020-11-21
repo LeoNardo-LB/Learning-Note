@@ -73,6 +73,10 @@ public class User {
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
 
+    <settings>
+    	
+    </settings>
+    
     <environments default="development">
         <environment id="development">
             <transactionManager type="JDBC"/>
@@ -144,26 +148,12 @@ public class User {
 
 ```java
 public interface UserMapper {
-
-
-    /*
-     * 增删改查
-     *
-     * */
-
     List<User> selectAllUsers();
-
     User selectUserById(Integer id);
-
     Integer updateUser(User user);
-
     Integer deleteUserByUserId(Integer id);
-
     Integer insertUser(User user);
-
     Integer insertUserBatch(@Param("users") List<User> users);
-
-
 }
 ```
 
@@ -1158,9 +1148,9 @@ foreach的6个属性：
 
 -   MyBatis共有两级缓存
 
-    一级缓存：一级缓存是把数据保存到SqlSession对象中（同一个SqlSession对象，就可以使用一级缓存）
+    一级缓存：一级缓存是把数据保存到SqlSession对象中（同一个SqlSession对象，就可以使用一级缓存，SqlSession级别）
 
-    二级缓存：二级缓存是把数据保存到SqlSessionFactory对象中（同一个SqlSessionFactory对象，可以使用二级缓存）
+    二级缓存：二级缓存是把数据保存到SqlSessionFactory对象中（同一个SqlSessionFactory对象，可以使用二级缓存，NameSpace级别）
 
 ### 一级缓存
 
@@ -1413,5 +1403,5 @@ flushCache属性存在于insert,delete,update标签中，作用是是执行inser
 3.  去数据库查询，并将查询结果保存在SqlSession的一级缓存，然后返回。
 4.  关闭SqlSession时，将一级缓存的数据保存到二级缓存中。
 
-
+![image-20201112105700349](_images/image-20201112105700349.png)
 
