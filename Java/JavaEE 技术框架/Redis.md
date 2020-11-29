@@ -784,7 +784,7 @@ AOF重写方式可以分为：
 
 
 
-## Java 整合 Redis
+## Java 整合 Redis：Jedis
 
 Java整合Redis非常简单，在整合的类中提供了与Redis命令名称一致的对象：Jedis。通过Jedis内置的方法，可以很容易地操作Redis
 
@@ -824,173 +824,49 @@ public class JedisTest {
 
 ### Jedis相关操作
 
-#### 对key的操作
+Jedis的操作与Redis操作完全一致，见名知意。
 
-```java
-private Jedis jedis;
-@Before
-public void before(){
-    this.jedis = new Jedis("192.168.202.205", 7000);
-}
-@After
-public void after(){
-    jedis.close();
-}
 
-//测试key相关
-@Test
-public void testKeys(){
-    //删除一个key
-    jedis.del("name");
-    //删除多个key
-    jedis.del("name","age");
 
-    //判断一个key是否存在exits
-    Boolean name = jedis.exists("name");
-    System.out.println(name);
+## Spring 整合 Redis：Jedis
 
-    //设置一个key超时时间 expire pexpire
-    Long age = jedis.expire("age", 100);
-    System.out.println(age);
+引入的依赖： 
 
-    //获取一个key超时时间 ttl
-    Long age1 = jedis.ttl("newage");
-    System.out.println(age1);
-
-    //随机获取一个key
-    String s = jedis.randomKey();
-
-    //修改key名称
-    jedis.rename("age","newage");
-
-    //查看可以对应值的类型
-    String name1 = jedis.type("name");
-    System.out.println(name1);
-    String maps = jedis.type("maps");
-    System.out.println(maps);
-}
+```xml
+<!--Redis-->
+<dependency>
+    <groupId>redis.clients</groupId>
+    <artifactId>jedis</artifactId>
+</dependency>
 ```
 
-#### String 类型操作
+spring配置文件加入以下内容，配置Jedis连接池即可，
 
-```java
-//测试String相关
-@Test
-public void testString(){
-    //set
-    jedis.set("name","小陈");
-    //get
-    String s = jedis.get("name");
-    System.out.println(s);
-    //mset
-    jedis.mset("content","好人","address","海淀区");
-    //mget
-    List<String> mget = jedis.mget("name", "content", "address");
-    mget.forEach(v-> System.out.println("v = " + v));
-    //getset
-    String set = jedis.getSet("name", "小明");
-    System.out.println(set);
+```xml
+<!--Jedis连接池的相关配置-->
+<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+    <!--在指定时刻通过pool能够获取到的最大的连接的jedis个数-->
+    <property name="maxTotal" value="200"/>
+    <!--最大能够保持idle的数量-->
+    <property name="maxIdle" value="50"/>
+    <!--表示连接池在创建链接的时候会先测试一下链接是否可用，这样可以保证连接池中的链接都可用的。-->
+    <property name="testOnBorrow" value="true"/>
+    <property name="testOnReturn" value="true"/>
+</bean>
 
-    //............
-}
-```
-
-#### List 类型操作
-
-```java
-//测试List相关
-@Test
-public void testList(){
-
-    //lpush
-    jedis.lpush("names1","张三","王五","赵柳","win7");
-
-    //rpush
-    jedis.rpush("names1","xiaomingming");
-
-    //lrange
-
-    List<String> names1 = jedis.lrange("names1", 0, -1);
-    names1.forEach(name-> System.out.println("name = " + name));
-
-    //lpop rpop
-    String names11 = jedis.lpop("names1");
-    System.out.println(names11);
-
-    //llen
-    jedis.linsert("lists", BinaryClient.LIST_POSITION.BEFORE,"xiaohei","xiaobai");
-
-    //........
-
-}
-```
-
-#### Set 类型操作
-
-```java
-//测试SET相关
-@Test
-public void testSet(){
-
-    //sadd
-    jedis.sadd("names","zhangsan","lisi");
-
-    //smembers
-    jedis.smembers("names");
-
-    //sismember
-    jedis.sismember("names","xiaochen");
-
-    //...
-}
-```
-
-#### ZSet 类型操作
-
-```java
-//测试ZSET相关
-@Test
-public void testZset(){
-
-    //zadd
-    jedis.zadd("names",10,"张三");
-
-    //zrange
-    jedis.zrange("names",0,-1);
-
-    //zcard
-    jedis.zcard("names");
-
-    //zrangeByScore
-    jedis.zrangeByScore("names","0","100",0,5);
-
-    //..
-}
-```
-
-#### Hash 类型操作
-
-```java
-//测试HASH相关
-@Test
-public void testHash(){
-    //hset
-    jedis.hset("maps","name","zhangsan");
-    //hget
-    jedis.hget("maps","name");
-    //hgetall
-    jedis.hgetAll("mps");
-    //hkeys
-    jedis.hkeys("maps");
-    //hvals
-    jedis.hvals("maps");
-    //....
-}
+<!-- Jedis连接池配置 -->
+<bean id="jedisPool" class="redis.clients.jedis.JedisPool">
+    <!-- 导入Jedis的配置 -->
+    <constructor-arg name="poolConfig" ref="jedisPoolConfig"/>
+    <constructor-arg name="host" value="192.168.72.132"/>
+    <constructor-arg name="port" value="6379" type="int"/>
+    <constructor-arg name="timeout" value="30000" type="int"/>
+</bean>
 ```
 
 
 
-## SpringBoot 整合 Redis
+## SpringBoot 整合 Redis：JedisTemplate
 
 Spring Boot Data(数据) Redis 中提供了**RedisTemplate**和**StringRedisTemplate**，其中StringRedisTemplate是RedisTemplate的子类，两个方法基本一致，不同之处主要体现在操作的数据类型不同：
 

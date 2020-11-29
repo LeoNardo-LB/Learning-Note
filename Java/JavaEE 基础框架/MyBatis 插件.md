@@ -1,3 +1,5 @@
+# MyBatis 插件
+
 ## MyBatis 逆向工程（MBG）
 
 MyBatis逆向工程，简称MBG。是一个专门为MyBatis框架使用者定制的代码生成器。可以快速的根据表生成对应的映射文件，接口，以及Bean类对象。
@@ -5,6 +7,31 @@ MyBatis逆向工程，简称MBG。是一个专门为MyBatis框架使用者定制
 mybatis的逆向工程，可以对单表生成的增，删，改，查代码的插件。
 
 **逆向工程的包为：mybatis-generator-core-1.3.2.jar**
+
+Maven 引入：
+
+```xml
+<!-- 数据库连接驱动 -->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>5.1.38</version>
+</dependency>
+
+<!-- mybatis -->
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis</artifactId>
+    <version>3.4.6</version>
+</dependency>
+
+<!-- mybatis-generator-core -->
+<dependency>
+    <groupId>org.mybatis.generator</groupId>
+    <artifactId>mybatis-generator-core</artifactId>
+    <version>1.3.7</version>
+</dependency>
+```
 
 可以生成的基础代码有：
 
@@ -33,6 +60,20 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
     -->
     <context id="DB2Tables" targetRuntime="MyBatis3">
 
+        <!-- 自动序列化 -->
+        <plugin type="org.mybatis.generator.plugins.SerializablePlugin" />
+        <plugin type="org.mybatis.generator.plugins.UnmergeableXmlMappersPlugin" />
+
+        <!-- 向Pojo类中添加hashCode与Equals方法 -->
+        <plugin type="org.mybatis.generator.plugins.EqualsHashCodePlugin">
+            <property name="useEqualsHashCodeFromRoot" value="true"/>
+        </plugin>
+
+        <!-- 向Pojo类中添加toString方法 -->
+        <plugin type="org.mybatis.generator.plugins.ToStringPlugin">
+            <property name="useToStringFromRoot" value="true"/>
+        </plugin>
+
         <!-- 去掉全部的注释 -->
         <commentGenerator>
             <property name="suppressAllComments" value="true"/>
@@ -50,13 +91,17 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
         </javaTypeResolver>
 
         <!--
-            javaModelGenerator标签配置JavaBean生成
+            javaModelGenerator标签配置Pojo生成
                 targetPackage 指定包名
                 targetProject 生成代码放在哪个位置
         -->
         <javaModelGenerator targetProject="./模块名/src" targetPackage="com.包名">
+            <!-- 是否允许子包 -->
             <property name="enableSubPackages" value="true" />
+            <!-- 是否取出前后空格 -->
             <property name="trimStrings" value="true" />
+            <!-- 是否对modal添加构造函数 -->
+            <property name="constructorBased" value="true" />
         </javaModelGenerator>
 
         <!--
@@ -90,35 +135,70 @@ mybatis的逆向工程，可以对单表生成的增，删，改，查代码的�
 
 ```
 
-2.  运行逆向工程代码（从文档中拷贝修改）
+2.  运行逆向工程代码
 
-```java
-package com.atguigu.mbg;
+    Java代码形式：直接复制文档即可
 
-import org.mybatis.generator.api.MyBatisGenerator;
-import org.mybatis.generator.config.Configuration;
-import org.mybatis.generator.config.xml.ConfigurationParser;
-import org.mybatis.generator.internal.DefaultShellCallback;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-public class Runner {
-
-    public static void main(String[] args) throws Exception{
-        List<String> warnings = new ArrayList<String>();
-        boolean overwrite = true;
-        File configFile = new File("mbg/mbg.xml");
-        ConfigurationParser cp = new ConfigurationParser(warnings);
-        Configuration config = cp.parseConfiguration(configFile);
-        DefaultShellCallback callback = new DefaultShellCallback(overwrite);
-        MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
-        myBatisGenerator.generate(null);
+    ```java
+    package com.atguigu.mbg;
+    
+    import org.mybatis.generator.api.MyBatisGenerator;
+    import org.mybatis.generator.config.Configuration;
+    import org.mybatis.generator.config.xml.ConfigurationParser;
+    import org.mybatis.generator.internal.DefaultShellCallback;
+    
+    import java.io.File;
+    import java.util.ArrayList;
+    import java.util.List;
+    
+    public class Runner {
+    
+        public static void main(String[] args) throws Exception{
+            List<String> warnings = new ArrayList<String>();
+            boolean overwrite = true;
+            File configFile = new File("mbg/mbg.xml");
+            ConfigurationParser cp = new ConfigurationParser(warnings);
+            Configuration config = cp.parseConfiguration(configFile);
+            DefaultShellCallback callback = new DefaultShellCallback(overwrite);
+            MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
+            myBatisGenerator.generate(null);
+        }
+    
     }
+    ```
 
-}
-```
+    Maven形式：使用Maven插件构建
+
+    ```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.mybatis.generator</groupId>
+                <artifactId>mybatis-generator-maven-plugin</artifactId>
+                <version>1.4.0</version>
+    
+                <configuration>
+                    <configurationFile>src/main/resources/generatorConfig.xml</configurationFile>
+                    <verbose>true</verbose>
+                    <overwrite>true</overwrite>
+                </configuration>
+    
+                <dependencies>
+                    <dependency>
+                        <groupId>mysql</groupId>
+                        <artifactId>mysql-connector-java</artifactId>
+                        <version>5.1.38</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+    ```
+
+    >   注意：Java代码形式与Maven插件形式加载mbg配置中的 targetProject 路径不同。
+    >
+    >   -   Java代码：`./` 前缀代表的是当前项目
+    >   -   Maven插件形式：不能加前缀，直接相对于当前项目或工程
 
 代码生成：
 

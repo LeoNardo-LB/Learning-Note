@@ -21,13 +21,15 @@
 // 该类为枚举类
 class Season{
     private String seasonName;
-    public static Season SPRING=new Season("春");
-    public static Season SUMMER=new Season("夏");
-    public static Season AUTUMN=new Season("秋");
-    public static Season WINTER=new Season("冬");
+    public static Season SPRING = new Season("春");
+    public static Season SUMMER = new Season("夏");
+    public static Season AUTUMN = new Season("秋");
+    public static Season WINTER = new Season("冬");
+    
     private Season(String name){
         this.seasonName=name;
     }
+    
     @Override
     public String toString() {
         return seasonName;
@@ -41,8 +43,6 @@ public class TestEnum {
     }
 }
 ```
-
-
 
 #### JDK5之后
 
@@ -107,7 +107,7 @@ enum Gun {
 enum Week {
 	MONDAY(1, "周一"), TUESDAY(2, "周二"), WENDSDAY(3, "周三"), THURSDAY(4, "周四"), FRIDAY(5, "周五"), SATUDAY(6, "周六"), SUNDAY(7, "周天");
 	
-	private int value; //序号
+	private int value; //代号
 	
 	private String desc; //描述
 	

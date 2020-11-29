@@ -897,7 +897,7 @@ SpringMVC对原生的文件上传下载进行了封装，可以实现文件上�
     </bean>
     ```
 
-2.  在 Handler 的形参列表中使用 `MultipartFile` 类型参数接收（可用 @RequestParam 接收指定参数）
+2.  在 Handler 的形参列表中使用 `MultipartFile` 类型参数接收（可用 @RequestParam 接收file表单的name属性参数）
 
     ```java
     @RequestMapping("/upload")

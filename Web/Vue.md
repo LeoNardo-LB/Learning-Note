@@ -350,6 +350,8 @@ Vue 的指令用于给当前Dom标签添加各种关联，如给当前Dom元素�
 <p :class="ok?'red':''">尚硅谷</p>
 ```
 
+>   简单说就是：插值表达式是将值输出到页面，v-bind是将值输出到标签属性内。
+
 ### 双向数据绑定：v-model
 
 `v-model` 可以实现双向数据绑定，原理是将**表单项的值**传递给Vue实例中的属性，再由 `v-text` 、`v-html` 或插值表达式实时输出到页面。
@@ -597,11 +599,11 @@ axios.post('/user',{
 
 组件可以分为全局组件与局部组件。
 
-#### 1、全局组件
+#### 全局组件
 
 全局组件注册给Vue实例,日后可以在任意Vue实例的范围内使用该组件
 
-开发全局组件
+1、开发全局组件
 
 ```js
 Vue.component('login',{
@@ -614,7 +616,7 @@ Vue.component('login',{
 1.  组件的名称
 2.  组件的配置：`template:''`用来书写组件的html代码，且template有且仅有一个root元素
 
-使用全局组件，在html页面中引入组件名作为标签即可
+2、使用全局组件，在html页面中引入组件名作为标签即可
 
 ```html
 <html>
@@ -622,11 +624,11 @@ Vue.component('login',{
 </html>
 ```
 
-### 2、局部组件
+#### 局部组件
 
-通过将组件注册给对应Vue实例中一个components属性来完成组件注册。
+通过将组件注册给对应Vue实例中的 `components` 属性来完成组件注册。
 
-开发局部组件
+1、开发局部组件
 
 ```js
 let login ={   //具体局部组件名称
@@ -643,9 +645,16 @@ const app = new Vue({
 });
 ```
 
-说明：给一个变量赋予一个含有 `template` 属性的json串，并将该对象注册到Vue实例的 `components` 属性中。（上述例子中 `login:login` 可以简写为 `login`）
+说明：给一个变量赋予一个含有 `template` 属性的json串，并将该对象注册到Vue实例的 `components` 属性中。
 
-使用局部组件，在对应Vue实例范围内可以使用
+注册组件格式说明：在Vue的 components 中注册组件时，格式为 `组件名:组件变量的引用` ，其中，
+
+-   组件名：主要作用是在 html 页面中可以通过组件名来使用组件
+-   组件变量的引用：局部组件的引用。
+
+如果组件名与组件变量的引用一直，则可以缩写，如 `login:login` 可以简写为 `login` 
+
+2、使用局部组件，在对应Vue实例范围内可以使用
 
 ```html
 <div id="app">
@@ -653,7 +662,7 @@ const app = new Vue({
 </div>
 ```
 
-#### 组件模板 \<template> 标签
+#### 局部组件模板 \<template> 标签
 
 可以使用 `<template>` 标签让组件模板声明在html中，然后让局部组件通过 CSS 选择器引用模板，从而达到更好的展示效果。
 
@@ -688,6 +697,165 @@ let login ={   //具体局部组件名称
 ```
 
 >   注意：`<template>` 在Vue实例作用范围外声明
+
+### 组件的属性 props
+
+props 可以在组件内定义属性值，格式为：
+
+```js
+props: ['prop1', 'prop2', ...]
+```
+
+在使用组件时可以通过给标签中对应的属性赋值的方法给模板中的属性赋值，从而展示出来。可以分为静态赋值与动态赋值。
+
+-   静态赋值：直接在html中使用组件的时候写死，该组件的属性值被固定。
+
+    ```html
+    <body>
+        <!-- vue控制的区域 -->
+        <div id="app">
+            <!-- 静态赋值：直接写死，传值给template -->
+            <locality-component name="leonardo" age="18"></locality-component>
+        </div>
+    
+        <template id="locality">
+            <div>
+                <h2> 局部组件1 </h2>
+                姓名： {{name}}<br>
+                年龄： {{age}}<br>
+            </div>
+        </template>
+    </body>
+    
+    <script>
+        var localityComponent = {
+            template: '#locality',
+            props: ['name', 'age']
+        }
+    
+        var app = new Vue({
+            el: "#app",
+            components: {
+                localityComponent,
+            }
+        })
+    </script>
+    ```
+
+-   动态赋值：在html中使用组件的时候通过 `v-bind(:)` 绑定模板中的属性，然后取出Vue实例的值赋予。
+
+    ```html
+    <body>
+        <!-- vue控制的区域 -->
+        <div id="app">
+            <!-- 动态赋值：此处的:绑定的是template中的属性，值可以直接从当前Vue实例取 -->
+            <locality-component2 :name="vue_name" :age="vue_age"/>
+        </div>
+        <template id="locality2">
+            <div>
+                <h2> 局部组件2 </h2>
+                姓名： {{name}}<br>
+                年龄： {{age}}<br>
+            </div>
+        </template>
+    </body>
+    
+    <script>
+        var localityComponent2 = {
+            template: '#locality2',
+            props: ['name', 'age']
+        }
+    
+        var app = new Vue({
+            el: "#app",
+            data: {
+                vue_name: "leonardo",
+                vue_age: "18"
+            },
+            components: {
+                localityComponent2
+            }
+        })
+    </script>
+    ```
+
+**单向数据流说明**
+
+单向数据流:所有的 prop 都使得其父子 prop 之间形成了一个单向下行绑定：父级 prop 的更新会向下流动到子组件中，但是反过来则不行。
+
+官网说明: 
+
+所有的 prop 都使得其父子 prop 之间形成了一个单向下行绑定：父级 prop 的更新会向下流动到子组件中，但是反过来则不行。这样会防止从子组件意外改变父级组件的状态，从而导致你的应用的数据流向难以理解。
+
+额外的，每次父级组件发生更新时，子组件中所有的 prop 都将会刷新为最新的值。这意味着你不应该在一个子组件内部改变 prop。如果你这样做了，Vue 会在浏览器的控制台中发出警告。
+
+### 组件的数据 data()
+
+可以在组件中定义一些内部数据，这样在组件内部就可以获取到（通过插值表达式或v指令等方法使用）。在组件中使用 `data(){return <json>}` 函数返回的json即为组件的数据。
+
+定义数据的格式（固定格式）：
+
+```js
+var component1 = {
+    data() {
+        return {
+            key1: "value1",
+            key2: true,
+            // ...
+        }
+    }
+}
+```
+
+### 组件的方法
+
+组件方法是在组件中可以调用的方法，定义方式与在Vue实例对象中类似，在 `methods` 中声明。
+
+```html
+<body>
+    <!-- vue控制的区域 -->
+    <div id="app">
+        <component1/>
+    </div>
+
+    <!-- 组件标签 -->
+    <template id="locality">
+        <div>
+            <h1>hello</h1>
+            <a href="javascript:;" @click="sayHello">点击say hello~</a>
+        </div>
+    </template>
+</body>
+<script>
+    var component1 = {
+        template: '#locality',
+        methods: {
+            sayHello() {
+                alert("hello component method!");
+            }
+        }
+    }
+
+    var app = new Vue({
+        el: "#app",
+        data: {},
+        methods: {},
+        components: {component1},
+    })
+</script>
+```
+
+
+
+### 组件的常见问题
+
+1.  组件命名时使用驼峰命名法，使用时必须使用段横杠连接。如下对应：
+
+    ```bash
+    referenceComponent == <reference-component/>
+    ```
+
+    
 
 
 

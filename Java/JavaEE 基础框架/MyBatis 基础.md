@@ -685,6 +685,8 @@ public void testInsertMap() {
 }
 ```
 
+>   注意：传入多个Pojo/Map对象，需要使用 `@Param` 指定对象名，在xml文件中使用 `#{<对象名>.<属性>}` 访问
+
 ### SELECT 查询标签 
 
 用于在数据库中查询的语句，由各种属性组成，其中 id 是必不可少的，id 标识了其与Dao接口方法中方法名的对应关系。
@@ -875,11 +877,9 @@ collection属性说明：
 -   property属性：对应集合对象在该对象内的名称
 -   ofType属性：表示集合内每个元素的类型，需要全类名
 
-#### association 与 collection 的分部查询
+#### association 与 collection 的分步查询
 
-分布查询，即通过多次查询（这里是两次）来给 对象属性赋值。
-
-（以association 为例，collection同理）
+分布查询，即通过多次查询（这里是两次）来给 对象属性赋值。（以association 为例，collection同理）
 
 ```xml
 <!-- 分步查询的resultMap -->
@@ -1021,7 +1021,7 @@ choose包裹 when与 otherwise标签，从上至下执行，当有一处when标�
     select * from t_item
     <where>
         <if test="name != null">
-            and name like concat('%',#{name},'%') and
+            and name like concat('%',#{name},'%')
         </if>
         <if test="price != null">
             and price &lt; #{price}
