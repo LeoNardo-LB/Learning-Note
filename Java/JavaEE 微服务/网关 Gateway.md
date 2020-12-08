@@ -286,3 +286,65 @@ spring:
 -   GatewayFilter（单一）：需要通过`spring.cloud.routes.filters` 配置在具体路由下，只作用在当前路由上或通过 `spring.cloud.default-filters` 配置在全局，作用在所有路由上。
 -   GlobalFilter（全局）：全局过滤器，不需要在配置文件中配置，作用在所有的路由上，最终通过 `GatewayFilterAdapter` 包装成 `GatewayFilterChain` 可识别的过滤器，它为请求业务以及路由的URI转换为真实业务服务的请求地址的核心过滤器，不需要配置，系统初始化时加载，并作用在每个路由上。
 
+### 单一过滤器
+
+单一过滤器的使用方式即在Springboot配置文件中指定即可，如上述代码所示。
+
+自定义单一过滤器，需要继承 `AbstractGatewayFilterFactory` 抽象类，并添加到IOC容器中：
+
+```java
+// 实现 AbstractGatewayFilterFactory 抽象类，并添加到IOC容器中
+@Component
+public class MySingleFilter extends AbstractGatewayFilterFactory {
+
+    @Override
+    public GatewayFilter apply(Object config) {
+        return new GatewayFilter() {
+            // 自定义过滤规则
+            @Override
+            public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+                System.out.println("进入自定义的Gateway Filter，当前时间为：" + new SimpleDateFormat("HH:mm:ss").format(new Date()));
+                // 可以通过 exchange 对象获取请求的所有信息，用于定制过滤规则
+                String username = exchange.getRequest().getQueryParams().getFirst("username");
+                Assert.notNull(username, "用户名不能为空！");
+                // 返回exchange 即放行请求，返回null则过滤不通过
+                return chain.filter(exchange);
+            }
+        };
+    }
+
+}
+```
+
+### 全局过滤器
+
+Spring Cloud Gateway框架内置的GlobalFilter如下：
+
+![image-20201208145955029](_images/image-20201208145955029.png)
+
+自定义全局过滤器：实现 `GlobalFilter` 与 `Ordered` 接口，并添加到ioc容器中：
+
+```java
+// 实现 Ordered, GlobalFilter 接口，并添加到IOC容器中
+@Component
+public class MyFilter implements Ordered, GlobalFilter {
+
+    // 自定义过滤规则
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        System.out.println("进入自定义的Gateway Filter，当前时间为：" + new SimpleDateFormat("HH:mm:ss").format(new Date()));
+        // 可以通过 exchange 对象获取请求的所有信息，用于定制过滤规则
+        String username = exchange.getRequest().getQueryParams().getFirst("username");
+        Assert.notNull(username, "用户名不能为空！");
+        // 返回exchange 即放行请求，返回null则过滤不通过
+        return chain.filter(exchange);
+    }
+
+    // 仅作顺序，不做修改
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+
+}
+```
