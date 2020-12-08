@@ -300,3 +300,7 @@ source /etc/profile
 chmod +x /etc/rc.d/rc.local
 ```
 
+
+
+## Nginx 安装部署
+
