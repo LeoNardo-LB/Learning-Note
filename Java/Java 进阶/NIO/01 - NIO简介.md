@@ -22,7 +22,9 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 
 非阻塞IO(NonBlocking IO)
 
-选择器(Selectors)![image.png](_images/1599118545047-0fff2d32-c3eb-4086-ae7d-09e6953c6038.png)
+选择器(Selectors)
+
+![image.png](_images/1599118545047-0fff2d32-c3eb-4086-ae7d-09e6953c6038.png)
 
 
 
@@ -34,14 +36,14 @@ Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，可�
 
 #### 使用通道的步骤为
 
-1.  获取缓冲区(造车):ByteBuffer.allocate(capacity)
-2.  获取通道(造路):FIle[Socket]Channel.open(...,...)
-3.  缓冲区获取数据(装货):input.read(buf)
-4.  切换模式:buf.flip()
-5.  缓冲区write数据到另一个通道(卸货):output.write(buf)
+1.  获取缓冲区（造车）：`ByteBuffer.allocate(capacity)`
+2.  获取通道（造路）：`FIle[Socket]Channel.open(...,...)`
+3.  缓冲区获取数据（装货）：`input.read(buf)`
+4.  切换模式：`buf.flip()`
+5.  缓冲区write数据到另一个通道（卸货）：`output.write(buf)`
 6.  关闭通道
 
->   如果数据量大,需要循环(拉货一次拉不完多拉几次)
+>   如果数据量大,需要循环（拉货一次拉不完多拉几次）
 
 ```java
 while(input.read(buf)!= -1){

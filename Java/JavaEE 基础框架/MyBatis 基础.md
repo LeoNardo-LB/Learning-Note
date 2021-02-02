@@ -259,7 +259,7 @@ try (SqlSession session = sqlSessionFactory.openSession()) {
 ```java
 try (SqlSession session = sqlSessionFactory.openSession()) {
     BlogMapper mapper = session.getMapper(BlogMapper.class);
-    // 你的应用逻辑代码
+    // 逻辑代码
 }
 ```
 

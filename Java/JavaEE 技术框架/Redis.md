@@ -339,16 +339,19 @@ key指的是在Redis中的键，由于Redis使用键值对存储数据，因此�
 **TYPE**
 
 - 语法 :  `TYPE <key>`
+
 - 作用 :  返回key 所储存的值的类型。
+
 - 可用版本： >= 1.0.0
+
 - 返回值：
 
-	none (key 不存在)
-	string (字符串)
-	list (列表)
-	set (集合)
-	zset (有序集)
-	hash (哈希表)
+    none (key 不存在)
+    string (字符串)
+    list (列表)
+    set (集合)
+    zset (有序集)
+    hash (哈希表)
 
 
 
@@ -776,6 +779,17 @@ AOF重写方式可以分为：
 
 ![image-20200623214843123](_images/image-20200623214843123.png)
 
+### RDB 与 AOF 对比
+
+| 对比项       | RDB            | AOF              |
+| ------------ | -------------- | ---------------- |
+| 启动优先级   | 低             | 高               |
+| 占用磁盘空间 | 小             | 大               |
+| 恢复速度     | 快             | 慢               |
+| 存储速度     | 慢             | 快               |
+| 数据安全项   | 会丢失较多数据 | 相对较少         |
+| 应用场景     | 适合于定期备份 | 适合数据临时存储 |
+
 ### 持久化总结
 
 两种持久化方案既可以同时使用 (aof)，又可以单独使用,在某种情况下也可以都不使用，具体使用那种持久化方案取决于用户的数据和应用决定。
@@ -932,7 +946,7 @@ StringRedisTemplate 与 RedisTemplate 的API大多对Redis原生命令进行了�
 
 RedisTemplate 会将 key - value 同时序列化（默认为JDK序列化方案），因此只能通过Java代码对该键值对进行操作，无法通过其他客户端（如redis-cli，Redis图形化界面等），具有一定局限性。在实际工作中，往往需要多个终端来查看或操作，因此只需要将value序列化，而不需要将key序列化。
 
-**解决方案：**
+**解决方案1：**
 
 在进行操作前，将key的序列化方案改为 StringRedisSerializer
 
@@ -948,6 +962,21 @@ public void after(){
 
 ![image-20201019212234961](_images/image-20201019212234961.png)
 
+**解决方案2**
+
+对象以json方式存入Redis
+
+```java
+@Bean
+public RedisTemplate<String, Serializable> redisTemplate(LettuceConnectionFactory connectionFactory) {
+    RedisTemplate<String, Serializable> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setKeySerializer(new StringRedisSerializer());//key序列化方式
+    redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());//value序列化
+    redisTemplate.setConnectionFactory(connectionFactory);
+    
+    return redisTemplate;
+}
+```
 ### 绑定API（boundXXXOps）
 
 key的绑定操作：如果日后对某一个key的操作及其频繁，可以将这个key绑定到对应redistemplate中，生成绑定对象，日后基于绑定操作都是操作这个key。
@@ -971,6 +1000,58 @@ public void testBoundKey(){
     System.out.println(s);
 }
 ```
+
+### 自动缓存注解
+
+说明：`@EnableCaching` 激活缓存注解。`@Cacheable(value = "xxx", key = "'xxx'")` 标注在方法上，对方法返回结果进行缓存。下次请求时，如果缓存存在，则直接读取缓存数据返回；如果缓存不存在，则执行方法，并把返回的结果存入缓存中。一般用在查询方法上。
+
+步骤如下：
+
+1、注入Redus缓存组件，整合springboot的缓存管理器（CacheManager）
+
+```java
+@Bean
+public CacheManager cacheManager(LettuceConnectionFactory connectionFactory) {
+
+    RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+        //过期时间600秒
+        .entryTtl(Duration.ofSeconds(600)) 
+        // 配置序列化
+        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+        .disableCachingNullValues();
+
+    RedisCacheManager cacheManager = RedisCacheManager.builder(connectionFactory)
+        .cacheDefaults(config)
+        .build();
+    return cacheManager;
+}
+```
+
+2、在配置类上激活Spring缓存  `@EnableCache`
+
+3、在需要缓存的方法上标注缓存 `@Cacheable` 注解。
+
+```java
+@Cacheable(value = "index::idType", key = "#adTypeId")	// 使用el表达式方法形参中的adTypeId作为key
+@Override
+public List<Ad> selectByAdTypeId(String adTypeId) {
+    QueryWrapper<Ad> queryWrapper = new QueryWrapper<>();
+    queryWrapper.orderByAsc("sort", "id");
+    queryWrapper.eq("type_id", adTypeId);
+    return baseMapper.selectList(queryWrapper);
+}
+```
+
+说明：`value + key`作为redis的key的前缀，返回值序列化后作为redis的value。
+
+el表达式的几种取值方式：
+
+-   按照参数名取值： `@Cacheable(value="index", key="#id")`，id为形参的参数之一
+-   按照参数索引取值： `@Cacheable(value="index", key="#p0")`，p0形参列表的参数索引
+-   对象取值：`@Cacheable(value="index", key="#user.id")`，user为包含id的对象
+
+
 
 
 
@@ -1658,8 +1739,8 @@ RSM：Redis Session Manager
 
     ```xml
     <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-data-redis</artifactId>
+        <groupId>org.springframework.session</groupId>
+        <artifactId>spring-session-data-redis</artifactId>
     </dependency>
     ```
 
@@ -1669,17 +1750,19 @@ RSM：Redis Session Manager
     @Configuration
     @EnableRedisHttpSession
     public class RedisSessionManager {
-       
+    
     }
     ```
 
     >   不用写任何额外配置。
 
-#### 注意
+3.  直接传入 `HttpSession` 可以获取并修改Session中的数据。
 
-在修改从Redis中取出的Session域中的数据时，只要该对象有变化，就一定要同步到Redis中（手动set）。
+    注意：在修改从Redis中取出的Session域中的数据时，只要该对象有变化，就一定要同步到Redis中（手动set）。
 
-原因：由Tomcat管理的Session，存的时JVM对象的地址值，因此Session对象变化时，地址值不变，内容会改变。而session存的是Session对象的序列化内容，因此无法通过Java对象修改。因此每更改一次Session对象时，就必须同步到Redis中。
+    原因：由Tomcat管理的Session，存的时JVM对象的地址值，因此Session对象变化时，地址值不变，内容会改变。而session存的是Session对象的序列化内容，因此无法通过Java对象修改。因此每更改一次Session对象时，就必须同步到Redis中。
+
+
 
 
 

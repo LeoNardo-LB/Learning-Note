@@ -562,3 +562,206 @@ class Dom{
 | ------------------------- | ------------------------------------------------ |
 | getElementsByTagName()    | 获取当前节点的指定标签名孩子节点                 |
 | appendChild( oChildNode ) | 可以添加一个子节点，oChildNode是要添加的孩子节点 |
+
+
+
+### 其他常用函数
+
+#### 1、定时器 `setInternal(<func(){}>, <timeout>)`
+
+参数一：回调函数
+
+参数二：重复执行的时间间隔
+
+清除定时器：`clearInterval(<定时器>)`
+
+#### 2、延迟执行 `timeout(<func(){}>, <timeout>)`
+
+参数一：回调函数
+
+参数二：延时时间
+
+清除延时器：`clearTimeout(<延时器>)`
+
+## ES6 语法
+
+### let 声明变量
+
+var 声明的变量没有局部作用域
+
+let 声明的变量  有局部作用域
+
+```js
+{
+    var a = 0
+    let b = 1
+}
+console.log(a)  // 0
+console.log(b)  // ReferenceError: b is not defined
+```
+
+var 可以声明多次
+
+let 只能声明一次
+
+```js
+var m = 1
+var m = 2
+let n = 3
+let n = 4  // Identifier 'n' has already been declared
+console.log(m)  // 2
+console.log(n) 
+```
+
+var 会变量提升
+
+let 不存在变量提升
+
+```js
+console.log(x)  //undefined
+var x = 'apple'
+
+console.log(y)  //ReferenceError: y is not defined
+let y = 'banana'
+```
+
+### const 声明变量
+
+声明之后不允许改变
+
+```js
+const PI = '3.1415926'
+PI = 3  // TypeError: Assignment to constant variable.
+```
+
+一旦声明必须被初始化
+
+```js
+const MY_AGE  // SyntaxError: Missing initializer in const declaration
+```
+
+### 模板字符串
+
+模板字符串相当于加强版的字符串，用反引号 `，除了作为普通字符串，还可以用来定义多行字符串，还可以在字符串中加入变量和表达式。
+
+增强表达式：
+
+```js
+var player = "leo"
+var weapon = "awp"
+var desc = `${player}拿着${weapon},实力十分强悍！`;
+
+console.log(desc); // leo拿着awp,实力十分强悍！
+```
+
+函数原样输出：
+
+```js
+var fun1 = `function(){
+    console.log("this is func1");
+}`
+
+var fun2 = function(){
+    console.log("this is func2");
+}
+
+console.log(fun1);
+console.log();
+console.log(fun2);
+```
+
+![image-20201217100720831](_images/image-20201217100720831.png)
+
+### 声明对象简写
+
+同名对象可以简写为一个，不需要硬性json格式。
+
+```js
+let age = 12
+let name = 'Amy'
+
+// 传统
+let person1 = {
+    age: age, 
+    name: name
+}
+console.log(person1)
+
+// ES6
+let person2 = {
+    age, 
+    name
+}
+console.log(person2) //{age: 12, name: 'Amy'}
+```
+
+### 自定义方法简写
+
+es6的语法定义函数时，可以省略 `:function`
+
+```js
+// 传统
+let person1 = {
+    sayHi:function(){
+        console.log('Hi')
+    }
+}
+person1.sayHi();//'Hi'
+
+
+// ES6
+let person2 = {
+    sayHi(){
+        console.log('Hi')
+    }
+}
+person2.sayHi()  //'Hi'
+```
+
+### 对象扩展运算符
+
+拓展运算符（...）用于取出参数对象所有可遍历属性然后拷贝到当前对象。
+
+```js
+let person = {name: 'Amy', age: 15}
+// let someone = person //引用赋值
+let someone = { ...person } //对拷拷贝
+someone.name = 'Helen' 
+console.log(person)  //{name: 'Amy', age: 15}
+console.log(someone)  //{name: 'Helen', age: 15}
+```
+
+### 函数的默认参数
+
+在声明函数时，指定 `参数=值` ，那么这个函数的这个位置的参数就有了默认值。
+
+```js
+function func(p1, p2 = 20) {
+    console.log("p1 = " + p1 + "\tp2 = " + p2);
+}
+
+func("leo");    //p1 = leo	p2 = 20
+func("leo", 22);    //p1 = leo	p2 = 22
+func("leo", undefined); //p1 = leo	p2 = 20
+func("leo", null);  //p1 = leo	p2 = null
+```
+
+>   只有在未传递参数，或者参数为 undefined 时，才会使用默认参数 
+
+### 箭头函数
+
+箭头函数提供了一种更加简洁的函数书写方式。基本语法是：
+
+```js
+参数 => 函数体
+```
+
+箭头函数多用于匿名函数的定义
+
+```js
+//使用箭头函数
+arr2 = arr.sort((a,b) => {
+    return a - b
+})
+```
+

@@ -200,7 +200,46 @@ Feign一般用法是通过 `微服务调用接口 + @FeignClient` 的方式调�
     }
     ```
 
-### Feign 超时设置
+### Feign 参数传递
+
+由于SpringCloud 采用Restful方式进行远程访问，因此参数传递有两种方式：
+
+1.  使用路径参数
+
+2.  使用json传参：
+
+    -   基本数据类型：使用 `@RequestParam` 标注参数
+
+    -   对象、map：使用 `@RequestBody` 标注传递的参数
+
+### Feign负载均衡
+
+有两种方式：实现原理一致。
+
+1、在配置文件中加入如下信息：
+
+```yaml
+service-oss: # 调用的提供者的名称
+  ribbon: 
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule	# 负载均衡全类名
+```
+
+2、将负载均衡的类注入ioc容器
+
+```java
+@Configuration
+public class IRuleConfig {
+
+    @Bean
+    public IRule injectRule() {
+        // IRule的实现类，随机策略
+        return new RandomRule();
+    }
+
+}
+```
+
+### Feign 超时与重试
 
 默认 Feign 客户端只等待一秒钟，要是服务端处理需要超过 1 秒钟，则直接抛出异常：`SocketTimeoutException: connect timed out`
 
@@ -211,6 +250,10 @@ Feign可以在在配置文件中修改超时时长：
 ribbon.ConnectTimeout: 5000
 # 设置收到回应超时时长（ms）
 ribbon.ReadTimeout:5000
+# 同一实例最大重试次数，不包括首次调用，默认0
+ribbon.MaxAutoRetries: 0 
+# 重试其他实例的最大重试次数，不包括首次所选的server，默认1
+ribbon.MaxAutoRetriesNextServer: 1 
 ```
 
 （配置文件可能没有提示）
@@ -240,4 +283,6 @@ ribbon.ReadTimeout:5000
       level:
         com.atguigu.cloud.service.OpenFeignService: debug
     ```
+
+### Feign 最佳实践
 

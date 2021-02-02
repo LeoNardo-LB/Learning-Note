@@ -1,4 +1,4 @@
-# Nacos
+# SpringCloud Alibaba Nacos
 
 ## Nacos 简介
 
@@ -22,7 +22,7 @@ Nacos是Alibaba推出的注册中心
 
 
 
-## Nacos 分布式配置
+## Nacos 配置中心
 
 Nacos 提供用于存储配置和其他元数据的 key/value 存储，为分布式系统中的外部化配置提供服务器端和客户端支持。
 
@@ -137,7 +137,7 @@ Nacos Confg 支持标准 Spring Cloud `@RefreshScope` 特性，即应用订阅�
     -   属性（非 static 字段）标注 `@Value`
     -   `@ConfigurationProperties`Bean
 
-### 加载多配置文件（扩展Data ID）
+### 扩展配置文件（扩展Data ID）
 
 Nacos Config 从 0.2.1 版本后，可支持自定义 Data Id 的配置，加载多配置文件。如果由多个配置文件需要加载，如下图：
 
@@ -448,6 +448,8 @@ Dubbo Spring Cloud 引入了全新的服务治理特性 - 服务自省（Service
 #### 3、Dubbo 迁移 Spring Cloud 服务调用
 
 尽管 Dubbo Spring Cloud 完全地保留了原生 Spring Cloud 服务调用特性，不过 Dubbo 服务治理的能力是 Spring Cloud Open Feign 所不及的，如高性能、高可用以及负载均衡稳定性等方面。因此，建议开发人员将 Spring Cloud Open Feign 或者`@LoadBalanced` RestTemplate迁移为 Dubbo 服务。考虑到迁移过程并非一蹴而就，因此，Dubbo Spring Cloud 提供了方案，即`@DubboTransported`注解。该注解能够帮助服务消费端的 Spring Cloud Open Feign 接口以及`@LoadBalanced``RestTemplate`Bean 底层走 Dubbo 调用（可切换 Dubbo 支持的协议），而服务提供方则只需在原有`@RestController`类上追加 Dubbo`@Servce`注解（需要抽取接口）即可，换言之，在不调整 Feign 接口以及`RestTemplate`URL 的前提下，实现无缝迁移。如果迁移时间充分的话，建议使用 Dubbo 服务重构系统中的原生 Spring Cloud 服务的定义。
+
+
 
 
 

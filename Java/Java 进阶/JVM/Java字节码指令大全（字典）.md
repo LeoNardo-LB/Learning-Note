@@ -5,20 +5,20 @@
 | **指令码** | **操作码（助记符）** | **操作数**           | **描述（栈指操作数栈）**                                     |
 | ---------- | -------------------- | -------------------- | ------------------------------------------------------------ |
 | 0x01       | aconst_null          |                      | null值入栈。                                                 |
-| 0x02       | iconst_m1            |                      | -1(int)值入栈。                                              |
-| 0x03       | iconst_0             |                      | 0(int)值入栈。                                               |
-| 0x04       | iconst_1             |                      | 1(int)值入栈。                                               |
-| 0x05       | iconst_2             |                      | 2(int)值入栈。                                               |
-| 0x06       | iconst_3             |                      | 3(int)值入栈。                                               |
-| 0x07       | iconst_4             |                      | 4(int)值入栈。                                               |
-| 0x08       | iconst_5             |                      | 5(int)值入栈。                                               |
-| 0x09       | lconst_0             |                      | 0(long)值入栈。                                              |
-| 0x0a       | lconst_1             |                      | 1(long)值入栈。                                              |
-| 0x0b       | fconst_0             |                      | 0(float)值入栈。                                             |
-| 0x0c       | fconst_1             |                      | 1(float)值入栈。                                             |
-| 0x0d       | fconst_2             |                      | 2(float)值入栈。                                             |
-| 0x0e       | dconst_0             |                      | 0(double)值入栈。                                            |
-| 0x0f       | dconst_1             |                      | 1(double)值入栈。                                            |
+| 0x02       | iconst_m1            |                      | 局部变量表上索引为-1(int)值入栈。                            |
+| 0x03       | iconst_0             |                      | 局部变量表上索引为0(int)值入栈。                             |
+| 0x04       | iconst_1             |                      | 局部变量表上索引为1(int)值入栈。                             |
+| 0x05       | iconst_2             |                      | 局部变量表上索引为2(int)值入栈。                             |
+| 0x06       | iconst_3             |                      | 局部变量表上索引为3(int)值入栈。                             |
+| 0x07       | iconst_4             |                      | 局部变量表上索引为4(int)值入栈。                             |
+| 0x08       | iconst_5             |                      | 局部变量表上索引为5(int)值入栈。                             |
+| 0x09       | lconst_0             |                      | 局部变量表上索引为0(long)值入栈。                            |
+| 0x0a       | lconst_1             |                      | 局部变量表上索引为1(long)值入栈。                            |
+| 0x0b       | fconst_0             |                      | 局部变量表上索引为0(float)值入栈。                           |
+| 0x0c       | fconst_1             |                      | 局部变量表上索引为1(float)值入栈。                           |
+| 0x0d       | fconst_2             |                      | 局部变量表上索引为2(float)值入栈。                           |
+| 0x0e       | dconst_0             |                      | 局部变量表上索引为0(double)值入栈。                          |
+| 0x0f       | dconst_1             |                      | 局部变量表上索引为1(double)值入栈。                          |
 | 0x10       | bipush               | valuebyte            | valuebyte值带符号扩展成int值入栈。                           |
 | 0x11       | sipush               | valuebyte1valuebyte2 | (valuebyte1 << 8) \| valuebyte2 值带符号扩展成int值入栈。    |
 | 0x12       | ldc                  | indexbyte1           | 常量池中的常量值（int, float, string reference, object reference）入栈。 |

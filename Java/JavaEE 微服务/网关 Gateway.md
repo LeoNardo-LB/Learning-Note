@@ -222,6 +222,8 @@ spring:
 >   注意：uri匹配路径后跟资源路径无效，Gateway处理时会直接省略后面的资源路径，如：
 >   `http://localhost/openfeign/rpc/asd/v/cx` 只会被解析为`http://localhost`
 
+
+
 ## Gateway 断言扩充
 
 Spring Cloud Gateway 通过 Predicate 来匹配来自用户的请求,如果匹配成功，才会将请求路由给指定的微服务。
@@ -348,3 +350,86 @@ public class MyFilter implements Ordered, GlobalFilter {
 
 }
 ```
+
+示例2：
+
+```java
+@Component
+public class AuthGlobalFilter implements GlobalFilter, Ordered {
+
+    @Autowired
+    Gson gson;
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // 此处的request与response 是 webflux中的，而非servlet中的
+        ServerHttpResponse response = exchange.getResponse();
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+
+        // 创建路径匹配器
+        AntPathMatcher pathMatcher = new AntPathMatcher();
+
+        // 如果路径不匹配，则直接放行
+        if (!pathMatcher.match("/**/auth/**", path)) {
+            return chain.filter(exchange);
+        }
+
+        // 如果token正确，则直接放行
+        String token = request.getHeaders().getFirst("token");
+        if (JwtHelper.checkToken(token)) {
+            return chain.filter(exchange);
+        }
+
+        // 下面的逻辑为路径匹配，且token不正确
+
+        // 设置回应的json为error
+        String jsonResult = gson.toJson(R.setResult(ResultCodeEnum.LOGIN_AUTH));
+        // 设置响应头
+        response.getHeaders().set("Content-Type", "Application/json; charset=utf-8");
+
+        // 写入json数据，固定写法
+        DataBuffer buffer = response.bufferFactory().wrap(jsonResult.getBytes(StandardCharsets.UTF_8));
+        return response.writeWith(Mono.just(buffer));
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+
+}
+```
+
+
+
+## Gateway 其他用法
+
+### 配置跨域
+
+只需要再Gateway的IOC容器中注入 `CorsWebFilter` 对象，并配置即可。该对象是一个全局过滤器。
+
+```java
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public CorsWebFilter corsWebFilter(){
+        // 这是一个配置跨域信息的配置对象
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+        corsConfiguration.setAllowCredentials(true);    // 允许携带cookie
+        corsConfiguration.addAllowedOrigin("*");    // 允许的请求源
+        corsConfiguration.addAllowedHeader("*");    // 允许的请求头
+        corsConfiguration.addAllowedMethod("*");    // 允许的http方法
+
+        // 这是一个使用url访问的cors配置集合，需要添加各种cors的配置
+        UrlBasedCorsConfigurationSource configurationSource = new UrlBasedCorsConfigurationSource();
+        configurationSource.registerCorsConfiguration("/**", corsConfiguration);
+        // 将cors的配置提交给 新建的CorsWebFilter对象
+        return new CorsWebFilter(configurationSource);
+    }
+
+}
+```
+
+>   注意：此处配置好跨域后，不可重复配置（比如，需要删除Controller上的@CrossOrigin）

@@ -148,7 +148,43 @@ mkdir /usr/local/nginx/logs
 
 ### 设置 Nginx 开机自启
 
+使用服务的形式开机自启：
 
+1、进入 `/lib/systemd/system` 写入 XXX.service，形势如下：
+
+```sh
+[Unit]						#服务的说明
+Description=nginx service	#描述
+After=network.target		#在某项服务启动之后启动，这里为 网络服务
+
+[Service]			#设置服务的参数
+Type=forking		#设置后台运行
+ExecStart=/usr/local/nginx/sbin/nginx				#设置启动命令
+ExecReload=/usr/local/nginx/sbin/nginx -s reload	#设置重载命令
+ExecStop=/usr/local/nginx/sbin/nginx -s quit		#设置结束命令
+PrivateTmp=true		#是否分配独立的临时空间
+
+[Install]	#用户运行级别相关 
+WantedBy=multi-user.target
+```
+
+2、设置开机自启，在命令行中输入：
+
+```bash
+systemctl enable nginx.service
+```
+
+其他相关命令：
+
+```sh
+systemctl start nginx.service		启动nginx服务
+systemctl stop nginx.service		停止服务
+systemctl restart nginx.service		重新启动服务
+systemctl list-units --type=service	查看所有已启动的服务
+systemctl status nginx.service		查看服务当前状态
+systemctl enable nginx.service		设置开机自启动
+systemctl disable nginx.service		停止开机自启动
+```
 
 
 

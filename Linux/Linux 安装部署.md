@@ -304,3 +304,255 @@ chmod +x /etc/rc.d/rc.local
 
 ## Nginx 安装部署
 
+### 环境准备
+
+1、安装C++语言环境
+
+```bash
+yum install gcc-c++
+```
+
+编译依赖 gcc 环境，如果没有 gcc 环境，需要安装 gcc
+
+2、安装PCRE
+
+```bash
+yum install -y pcre pcre-devel
+```
+
+PCRE(Perl Compatible Regular Expressions)是一个 Perl 库，包括 perl 兼容的正则表达式库。nginx 的 http 模块使用 pcre 来解析正则表达式，所以需要在 linux 上安装 pcre 库。pcre-devel 是使用 pcre 开发的一个二次开发库。nginx 也需要此库。
+
+3、安装zlib
+
+```bash
+yum install -y zlib zlib-devel
+```
+
+zlib 库提供了很多种压缩和解压缩的方式，nginx 使用 zlib 对 http 包的内容进行 gzip，所以需要在 linux上安装 zlib 库。
+
+4、安装openssl
+
+```bash
+yum install -y openssl openssl-devel
+```
+
+OpenSSL 是一个强大的安全套接字层密码库，囊括主要的密码算法、常用的密钥和证书封装管理功能及 SSL
+协议，并提供丰富的应用程序供测试或其它目的使用。nginx 不仅支持 http 协议，还支持 https（即在 ssl 协议上传输 http），所以需要在 linux 安装 openssl库。
+
+### 安装 Nginx
+
+1、解压并进入Nginx目录
+
+```bash
+tar -zxvf nginx-1.12.2.tar.gz -C /opt/software
+cd /opt/software/nginx-1.12.2
+```
+
+2、创建nginx临时文件目录
+
+```bash
+mkdir -p /var/temp/nginx
+```
+
+3、生成 makefile 文件，可用 `./configure --help` 查询详细参数
+
+```bash
+./configure \
+--prefix=/usr/local/nginx \
+--pid-path=/var/run/nginx/nginx.pid \
+--lock-path=/var/lock/nginx.lock \
+--error-log-path=/var/log/nginx/error.log \
+--http-log-path=/var/log/nginx/access.log \
+--with-http_gzip_static_module \
+--http-client-body-temp-path=/var/temp/nginx/client \
+--http-proxy-temp-path=/var/temp/nginx/proxy \
+--http-fastcgi-temp-path=/var/temp/nginx/fastcgi \
+--http-uwsgi-temp-path=/var/temp/nginx/uwsgi \
+--http-scgi-temp-path=/var/temp/nginx/scgi
+```
+
+4、编译并安装
+
+```bash
+make & make install
+```
+
+5、服饰 nginx 命令为全局命令
+
+```bash
+cp /usr/local/nginx/sbin/nginx /usr/local/bin/
+```
+
+将 nginx 命令复制为全局命令之后，就可以在任意地方使用了。
+
+6、启动 nginx 并测试
+
+```bash
+cd /usr/local/nginx/sbin/
+./nginx
+```
+
+执行./nginx 启动 nginx，这里可以-c 指定加载的 nginx 配置文件，如下：
+
+```bash
+./nginx -c /usr/local/nginx/conf/nginx.conf
+```
+
+如果不指定-c-c，nginxnginx 在启动时默认加载 conf/nginx.conf 文件，此文件的地址也可以在编译安装 nginnginx 时指定./configure 的参数（--conf-path= 指向配置文件（nginx.confnginx.conf））
+
+![image-20201204083620320](_images/image-20201204083620320.png)
+
+### 开放 Nginx 远程连接
+
+开放80端口
+
+```bash
+# 开放端口号
+firewall-cmd --add-port=80/tcp --permanent
+
+# 重载防火墙
+firewall-cmd --reload
+
+# 查看防火墙状态
+firewall-cmd --list-all
+```
+
+nginx 默认端口号为80，因此只需要开放80端口即可。
+
+### 访问测试
+
+在Windows上通过访问虚拟机的 ip:port 来测试nginx是否开启成功
+
+测试成功界面：![image-20201204084150683](_images/image-20201204084150683.png)
+
+### Bug解决
+
+解决每次开机都缺少pid文件的小bug
+
+1、打开nginx的配置文件，去掉 pid一行的注释。
+
+```bash
+# 打开Nginx配置文件
+vim /usr/local/nginx/conf/nginx.conf
+```
+
+去掉pid目录的注释：![image-20201204090247247](_images/image-20201204090247247.png)
+
+2、创建对应目录
+
+```bash
+mkdir /usr/local/nginx/logs
+```
+
+### 设置 Nginx 开机自启
+
+使用服务的形式开机自启：
+
+1、进入 `/lib/systemd/system` 写入 XXX.service，形势如下：
+
+```sh
+[Unit]						#服务的说明
+Description=nginx service	#描述
+After=network.target		#在某项服务启动之后启动，这里为 网络服务
+
+[Service]			#设置服务的参数
+Type=forking		#设置后台运行
+ExecStart=/usr/local/nginx/sbin/nginx				#设置启动命令
+ExecReload=/usr/local/nginx/sbin/nginx -s reload	#设置重载命令
+ExecStop=/usr/local/nginx/sbin/nginx -s quit		#设置结束命令
+PrivateTmp=true		#是否分配独立的临时空间
+
+[Install]	#用户运行级别相关 
+WantedBy=multi-user.target
+```
+
+2、设置开机自启，在命令行中输入：
+
+```bash
+systemctl enable nginx.service
+```
+
+其他相关命令：
+
+```sh
+systemctl start nginx.service		启动nginx服务
+systemctl stop nginx.service		停止服务
+systemctl restart nginx.service		重新启动服务
+systemctl list-units --type=service	查看所有已启动的服务
+systemctl status nginx.service		查看服务当前状态
+systemctl enable nginx.service		设置开机自启动
+systemctl disable nginx.service		停止开机自启动
+```
+
+
+
+## RabbitMQ 安装部署
+
+rpm包安装RabbitMQ。
+
+1、将三个rpm安装包放入Linux系统
+
+![image-20201209173448729](_images/image-20201209173448729.png)
+
+2、先后执行安装命令：
+
+```bash
+# 安装erlang语言
+rpm -ivh erlang-21.3.8.9-1.el7.x86_64.rpm
+# 安装socat工具
+rpm -ivh socat-1.7.3.2-1.el6.lux.x86_64.rpm
+# 安装RabbitMQ
+rpm -ivhrabbitmq-server-3.8.1-1.el7.noarch.rpm
+```
+
+解释：RabbitMQ依赖socat工具集，socat需要erlang语言环境。
+
+>   如果rabbitmq安装报错，则使用yum安装 socat：
+>
+>   `yum install -y socat`
+
+安装成功后rabbitmq命令存放在：`/usr/lib/rabbitmq/lib/rabbitmq_server-3.8.1/sbin/`
+
+3、启用RabbitMQ 控制台管理插件
+
+```bash
+rabbitmq-plugins enable rabbitmq_management
+```
+
+4、启动RabbitMQ
+
+```bash
+# 启动RabbitMQ
+systemctl start rabbitmq-server.service
+# 其他命令
+systemctl status rabbitmq-server.service
+systemctl restart rabbitmq-server.service
+systemctl stop rabbitmq-server.service
+```
+
+5、开放端口号
+
+```bash
+# 开放Rabbit控制台
+firewall-cmd --add-port=15672/tcp --permanent
+# 开放Rabbit消息端口
+firewall-cmd --add-port=5672/tcp --permanent
+# 重载防火墙
+firewall-cmd --reload
+```
+
+6、开放外部guest登录权限：
+
+```bash
+# loopback_users 中的 <<"guest">>,只保留 guest
+vim /usr/lib/rabbitmq/lib/rabbitmq_server-3.8.1/ebin/rabbit.app
+```
+
+![image-20201209174719017](_images/image-20201209174719017.png)
+
+然后重启RabbitMQ服务
+
+```bash
+systemctl restart rabbitmq-server
+```
+

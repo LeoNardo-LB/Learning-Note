@@ -19,14 +19,14 @@
 
 ## 选择器的应用
 
-1.  ##### 创建Selector: 通过调用Selector.open() 方法创建一个Selector。
+##### 1、创建Selector: 通过调用Selector.open() 方法创建一个Selector。
 
 ```java
 // 创建一个选择器
 Selector selector = Selector.open();
 ```
 
-2.  ##### 向选择器注册通道: SelectableChannel.register(Selector sel, int ops)
+##### 2、向选择器注册通道: SelectableChannel.register(Selector sel, int ops)
 
 ```java
 // 创建一个Socket套接字
@@ -47,27 +47,27 @@ SelectionKey key = channel.register(selector,SelectionKey.OP_READ);
 
 >   此处OP_READ为 SelectionKey的枚举类
 
-3.  ##### SelectionKey 注册监听事件
+##### 3、SelectionKey 注册监听事件
 
 ```java
 int interestSet = SelectionKey.OP_READ | SelectionKey.OP_WRITE
 ```
 
->   -   当调用register(Selector sel, int      ops) 将通道注册选择器时，选择器对通道的监听事件，需要通过第二个参数ops 指定。
->
->   -   可以监听的事件类型（可使用SelectionKey      的四个常量表示）：
->
->       ​	读: SelectionKey.OP_READ （1）
->
->       ​	写: SelectionKey.OP_WRITE （4）
->
->       ​	连接: SelectionKey.OP_CONNECT（8）
->
->       ​	接收: SelectionKey.OP_ACCEPT （16）
->
->   -   若注册时不止监听一个事件，则可以使用“位或”操作符连接。
->
->   -   SelectionKey：表示SelectableChannel      和Selector      之间的注册关系。每次向选择器注册通道时就会选择一个事件(选择键)。选择键包含两个表示为整数值的操作集。操作集的每一位都表示该键的通道所支持的一类可选择操作。
+-   当调用register(Selector sel, int      ops) 将通道注册选择器时，选择器对通道的监听事件，需要通过第二个参数ops 指定。
+
+-   可以监听的事件类型（可使用SelectionKey      的四个常量表示）：
+
+    ​	读: SelectionKey.OP_READ （1）
+
+    ​	写: SelectionKey.OP_WRITE （4）
+
+    ​	连接: SelectionKey.OP_CONNECT（8）
+
+    ​	接收: SelectionKey.OP_ACCEPT （16）
+
+-   若注册时不止监听一个事件，则可以使用“位或”操作符连接。
+
+-   SelectionKey：表示SelectableChannel      和Selector      之间的注册关系。每次向选择器注册通道时就会选择一个事件(选择键)。选择键包含两个表示为整数值的操作集。操作集的每一位都表示该键的通道所支持的一类可选择操作。
 
 #### SelectionKey的方法
 

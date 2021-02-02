@@ -1374,7 +1374,7 @@ public class AccountServiceImpl implements AccountService {
 
 ##### 总结：
 
-REQUIRED是命运共同体，REQUIRED自己开一个新事务，建立新连接来搞。REQUIRED与外层事务同生共死，REQUIRED_NEW另起炉灶
+REQUIRED是命运共同体；REQUIRED自己开一个新事务，建立新连接来搞。REQUIRED与外层事务同生共死，REQUIRED_NEW另起炉灶
 
 ### XML配置声明式事务
 

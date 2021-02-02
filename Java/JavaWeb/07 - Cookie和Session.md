@@ -276,6 +276,12 @@ Session 会话技术是基于 Cookie 技术实现的。![asd](_images/asd.png)
 
 
 
+## SessionMap钝化与活化
+
+
+
+
+
 ## Cookie与Session的简单应用
 
 ### Cookie存储用户名与密码

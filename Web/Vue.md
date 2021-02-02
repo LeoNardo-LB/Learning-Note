@@ -105,6 +105,67 @@ var app = new Vue({
 
 
 
+## Vue 属性
+
+### el 属性
+
+### data 属性
+
+### methods 属性
+
+### router 属性
+
+### computed 计算属性
+
+计算属性可以将值动态计算之后绑定输出到指定位置。使用 `computed` 属性来实现属性的计算。格式如下：
+
+```js
+new Vue({
+    // 标识计算方法的集合
+    computed: {
+        <方法名>() {
+            return <计算结果>
+        }
+    }
+})
+```
+
+代码示例：对p1进行计算，将计算结果缓存到key方法的返回值中，最后在页面渲染输出
+
+```html
+<body>
+    ...
+    <div id="app">
+        <!-- 调用方法，则直接输出计算的结果 -->
+		{{key()}}
+    </div>
+    ...
+</body>
+<script>
+    new Vue({
+        data: {
+			p1: 20;
+        },
+        computed: {
+            // 对p1属性进行计算，将结果缓存到key()方法中。
+            key() {
+                return p1*2
+            }
+        }
+    })
+</script>
+```
+
+>   **计算属性基于缓存：**在相关依赖发生改变时它们才会重新求值。因此**方法将总会再次执行**
+
+### watch 属性
+
+watch属性用于监听网页中的元素变化，一般与 `v-model` 配合使用：当v-model绑定的属性值改变后，就会回调watch属性中定义的方法。
+
+
+
+
+
 ## Vue 指令（v-<XXX>）
 
 Vue 的指令用于给当前Dom标签添加各种关联，如给当前Dom元素绑定事件，绑定Vue的某个值等。
@@ -540,7 +601,7 @@ axios.put(url[,data[,config]])
 axios.patch(url[,data[,config]])
 ```
 
-### get请求
+#### 1、get请求
 
 ```js
 //通过给定的ID来发送请求
@@ -571,7 +632,7 @@ axios.get('/user',{
 });
 ```
 
-### post请求
+#### 2、post请求
 
 ```js
 axios.post('/user',{
@@ -588,6 +649,176 @@ axios.post('/user',{
 ```
 
 >   注意：要获取实际返回的json串存储在回应的 data属性中，因此需要通过 `resp.data` 来获取。![image-20201120225953681](_images/image-20201120225953681.png)
+
+### 内置请求参数
+
+在第二个参数中写入
+
+-   baseURL：请求的站点，相当于 <base> 标签的 href属性
+-   timeout：连接超时时间，单位ms
+-   params：请求参数
+
+#### 跨域请求
+
+出于浏览器的同源策略限制：
+
+-   所谓同源（即指在同一个域）就是两个地址具有相同的协议（protocol），主机（host）和端口号（port）
+
+-   同源策略会阻止一个域的javascript脚本和另外一个域的内容进行交互。
+
+
+同源策略（Sameoriginpolicy）是一种约定，它是浏览器最核心也最基本的安全功能。
+
+例如：
+
+```bash
+http://www.atguigu.com/index.html 调用 http://www.atguigu.com/teacher/listall （非跨域）
+http://www.atguigu.com/index.html 调用 http://www.guigu.com/server.php （主域名不同:atguigu/guigu，跨域）
+http://abc.atguigu.com/index.html 调用 http://def.atguigu.com/server.php（子域名不同:abc/def，跨域）
+http://www.atguigu.com:8080/index.html调用 http://www.atguigu.com:8081/server.php（端口不同:8080/8081，跨域）
+http://www.atguigu.com/index.html 调用 https://www.atguigu.com/server.php（协议不同:http/https，跨域）
+请注意：localhost和127.0.0.1虽然都指向本机，但也属于跨域。
+```
+
+### axios 参数
+
+```json
+{
+    // `url` 是用于请求的服务器 URL
+    url: '/user',
+
+    // `method` 是创建请求时使用的方法
+    method: 'get', // default
+
+    // `baseURL` 将自动加在 `url` 前面，除非 `url` 是一个绝对 URL。
+    // 它可以通过设置一个 `baseURL` 便于为 axios 实例的方法传递相对 URL
+    baseURL: 'https://some-domain.com/api/',
+
+    // `transformRequest` 允许在向服务器发送前，修改请求数据
+    // 只能用在 'PUT', 'POST' 和 'PATCH' 这几个请求方法
+    // 后面数组中的函数必须返回一个字符串，或 ArrayBuffer，或 Stream
+    transformRequest: [function (data, headers) {
+        // 对 data 进行任意转换处理
+        return data;
+    }],
+
+    // `transformResponse` 在传递给 then/catch 前，允许修改响应数据
+    transformResponse: [function (data) {
+        // 对 data 进行任意转换处理
+        return data;
+    }],
+
+    // `headers` 是即将被发送的自定义请求头
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+
+    // `params` 是即将与请求一起发送的 URL 参数
+    // 必须是一个无格式对象(plain object)或 URLSearchParams 对象
+    params: {
+        ID: 12345
+    },
+
+    // `paramsSerializer` 是一个负责 `params` 序列化的函数
+    // (e.g. https://www.npmjs.com/package/qs, http://api.jquery.com/jquery.param/)
+    paramsSerializer: function(params) {
+        return Qs.stringify(params, {arrayFormat: 'brackets'})
+    },
+
+    // `data` 是作为请求主体被发送的数据
+    // 只适用于这些请求方法 'PUT', 'POST', 和 'PATCH'
+    // 在没有设置 `transformRequest` 时，必须是以下类型之一：
+    // - string, plain object, ArrayBuffer, ArrayBufferView, URLSearchParams
+    // - 浏览器专属：FormData, File, Blob
+    // - Node 专属： Stream
+    data: {
+        firstName: 'Fred'
+    },
+
+    // `timeout` 指定请求超时的毫秒数(0 表示无超时时间)
+    // 如果请求话费了超过 `timeout` 的时间，请求将被中断
+    timeout: 1000,
+
+    // `withCredentials` 表示跨域请求时是否需要使用凭证
+    withCredentials: false, // default
+
+    // `adapter` 允许自定义处理请求，以使测试更轻松
+    // 返回一个 promise 并应用一个有效的响应 (查阅 [response docs](#response-api)).
+    adapter: function (config) {
+        /* ... */
+    },
+
+    // `auth` 表示应该使用 HTTP 基础验证，并提供凭据
+    // 这将设置一个 `Authorization` 头，覆写掉现有的任意使用 `headers` 设置的自定义 `Authorization`头
+    auth: {
+        username: 'janedoe',
+        password: 's00pers3cret'
+    },
+
+    // `responseType` 表示服务器响应的数据类型，可以是 'arraybuffer', 'blob', 'document', 'json', 'text', 'stream'
+    responseType: 'json', // default
+
+    // `responseEncoding` indicates encoding to use for decoding responses
+    // Note: Ignored for `responseType` of 'stream' or client-side requests
+    responseEncoding: 'utf8', // default
+
+    // `xsrfCookieName` 是用作 xsrf token 的值的cookie的名称
+    xsrfCookieName: 'XSRF-TOKEN', // default
+
+    // `xsrfHeaderName` is the name of the http header that carries the xsrf token value
+    xsrfHeaderName: 'X-XSRF-TOKEN', // default
+
+    // `onUploadProgress` 允许为上传处理进度事件
+    onUploadProgress: function (progressEvent) {
+        // Do whatever you want with the native progress event
+    },
+
+    // `onDownloadProgress` 允许为下载处理进度事件
+    onDownloadProgress: function (progressEvent) {
+        // 对原生进度事件的处理
+    },
+
+    // `maxContentLength` 定义允许的响应内容的最大尺寸
+    maxContentLength: 2000,
+
+    // `validateStatus` 定义对于给定的HTTP 响应状态码是 resolve 或 reject  promise 。如果 `validateStatus` 返回 `true` (或者设置为 `null` 或 `undefined`)，promise 将被 resolve; 否则，promise 将被 rejecte
+    validateStatus: function (status) {
+        return status >= 200 && status < 300; // default
+    },
+
+    // `maxRedirects` 定义在 node.js 中 follow 的最大重定向数目
+    // 如果设置为0，将不会 follow 任何重定向
+    maxRedirects: 5, // default
+
+    // `socketPath` defines a UNIX Socket to be used in node.js.
+    // e.g. '/var/run/docker.sock' to send requests to the docker daemon.
+    // Only either `socketPath` or `proxy` can be specified.
+    // If both are specified, `socketPath` is used.
+    socketPath: null, // default
+
+    // `httpAgent` 和 `httpsAgent` 分别在 node.js 中用于定义在执行 http 和 https 时使用的自定义代理。允许像这样配置选项：
+    // `keepAlive` 默认没有启用
+    httpAgent: new http.Agent({ keepAlive: true }),
+    httpsAgent: new https.Agent({ keepAlive: true }),
+
+    // 'proxy' 定义代理服务器的主机名称和端口
+    // `auth` 表示 HTTP 基础验证应当用于连接代理，并提供凭据
+    // 这将会设置一个 `Proxy-Authorization` 头，覆写掉已有的通过使用 `header` 设置的自定义 `Proxy-Authorization` 头。
+    proxy: {
+        host: '127.0.0.1',
+        port: 9000,
+        auth: {
+            username: 'mikeymike',
+            password: 'rapunz3l'
+        }
+    },
+
+    // `cancelToken` 指定用于取消请求的 cancel token
+    // （查看后面的 Cancellation 这节了解更多）
+    cancelToken: new CancelToken(function (cancel) {
+    })
+}
+```
+
+
 
 
 
@@ -845,18 +1076,123 @@ var component1 = {
 </script>
 ```
 
-
-
 ### 组件的常见问题
 
 1.  组件命名时使用驼峰命名法，使用时必须使用段横杠连接。如下对应：
 
     ```bash
-    referenceComponent == <reference-component/>
+    referenceComponent <==> <reference-component/>
     ```
-
-    
 
 
 
 ## Vue 路由（Router）
+
+### 使用路由
+
+引入路由依赖
+
+```html
+<!-- vue -->
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+
+<!-- vue router -->
+<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+```
+
+使用 `<router-link>` 标签进行路由跳转，使用 `<router-view>` 标签进行渲染输出。
+
+```html
+<div id="app">
+    <p>
+        <!-- <router-link> 默认会被渲染成一个 `<a>` 标签 -->
+        <!-- 通过传入 `to` 属性指定链接. -->
+        <router-link to="/">首页</router-link>
+        <router-link to="/student">会员管理</router-link>
+        <router-link to="/teacher">讲师管理</router-link>
+    </p>
+    
+    <!-- 路由出口：匹配的组件将渲染在这里 -->
+    <router-view></router-view>
+</div>
+```
+
+>   相当于：`<router-link to="/login"/>` 代替 `<a href="#/login">`
+
+js代码，编写路由逻辑
+
+```js
+// 定义被路由的组件
+const indexComp = { template: "<h1>欢迎来到枪械介绍主页</h1>" }
+const akComp = { template: "<div>ak具有较大的单发威力，但是较难控制，准度较差</div>" }
+const m4Comp = { template: "<div>m4具有较高的可控性、准度与射速，但是威力较小</div>" }
+const awpComp = { template: "<div>awp具有一击毙命的能力</div>" }
+
+const myRouter = new VueRouter({
+    // 可以指定多个route，因此属性名称为routes
+    routes: [
+        // 重定向到主页
+        { 'path': "/", redirect: "/index" },
+        // 指定多个路由，路径--组件
+        { 'path': "/index", 'component': indexComp },
+        { 'path': "/akintro", 'component': akComp },
+        { 'path': "/m4intro", 'component': m4Comp },
+        { 'path': "/awpintro", 'component': awpComp }
+    ]
+})
+
+new Vue({
+    el: "#app",
+    // 将定义好的router传入Vue实例
+    router: myRouter
+})
+```
+
+### 路由Path细节
+
+#### 1、path携带参数
+
+**传递参数**
+
+路由支持restful风格接收参数，语法为：`path: '/<中间路径>/<:参数>'`
+
+如，可以通过 `:id` 匹配 id 参数
+
+```\
+path: '/teacher/:id'
+```
+
+可以匹配teacher后带任意一个参数的路径：
+
+```bash
+'/teacher/1'
+```
+
+**接收参数**
+
+在目标页面使用`<vue实例>.$route.param.<路径参数>` 获取。实例：
+
+```js
+# 在Vue实例中，获取路由路径中的id参数
+console.log(this.$route.params.id)
+```
+
+### router对象常用操作
+
+#### 获取Vue的router对象
+
+在Vue实例内：
+
+```js
+this.$router	//获取vue实例的router对象（多个映射）
+this.$route		//获取当前页面route对象（映射）
+```
+
+#### $router 常用API
+
+| 对象api                         | 说明           |
+| ------------------------------- | -------------- |
+| this.$router.push(“<路由地址>”) | 跳转到目标路由 |
+
+#### $route 常用API
+

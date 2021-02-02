@@ -160,5 +160,13 @@ private static Map<String, List<String>> loadSpringFactories(ClassLoader classLo
 
 
 
+
+
+
+
 ## @ConfigurationProperties 注解
+
+
+
+
 

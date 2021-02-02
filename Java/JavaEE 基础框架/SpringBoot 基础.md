@@ -36,9 +36,9 @@ SpringBoot的主启动类注解，表示这是SpringBoot程序的入口。
 
 ### @ConfigurationProperties：前缀注入
 
-该注解通常搭配其 prefix 属性使用：`@ConfigurationProperties(prefix = "XXX")` 
+该注解通常搭配其 prefix 属性使用：`@ConfigurationProperties(prefix = "XXX")` ，用于将Springboot的配置文件按照前缀进行注入。前提：被Spring的IOC容器管理
 
-常用用法有如下两种：
+常用用法有如下三种：
 
 1.  在配置类中，需要配合 `@Bean` 注解，用于在加入IOC容器的组件进行前缀注入
 
@@ -48,7 +48,9 @@ SpringBoot的主启动类注解，表示这是SpringBoot程序的入口。
 
     ![image-20201203113117828](_images/image-20201203113117828.png)
 
-### @PropertySource 与 @ImportResource/@Import：配置导入
+3.  被其他类导入也可以生效，常用于作为starter写法。
+
+### @PropertySource 与 @ImportResource：配置导入
 
 -   `@PropertySource`：加载指定的配置文件
 
@@ -60,7 +62,7 @@ SpringBoot的主启动类注解，表示这是SpringBoot程序的入口。
 
 ### @Import：导入配置类
 
-可以给当前类导入其他配置类，自己不用标注 @Configuration 注解。将被导入的配置类中的Bean 注册到 IOC容器中。可以理解为：将 @Import 指定的类加入到标注@Import的类中。
+标注在spring组件上。给容器中通过无参构造器自动创建出导入类型的组件。可以给当前类导入其他配置类，将被导入的类注册到 IOC容器中。默认组件的名称为导入类的全类名。
 
 被导入的类的条件有三个，选其中之一即可：
 
@@ -1032,5 +1034,262 @@ public class TestController {
 >
 >   可以在SpringBoot 配置文件中通过 `spring.web.resources.static-locations` 属性覆盖修改。
 
+### Thymeleaf 常用渲染语法
 
+#### 1、th:text 标签体填充
+
+基本语法：在html的标签中添加 `th:text` 属性，并使用`${ xxx }`来获取值（默认是请求域）
+
+```html
+<!-- 常规用法 -->
+欢迎您：<span th:text="${user.name}">请登录</span>
+```
+
+字符串拼接：使用单引号`‘ ’`拼接 `${ xxx }` 或 双竖线语法`||`
+
+```html
+<!-- 字符串拼接：下面两种方式等价 -->
+<span th:text="'欢迎您，' + ${user.name}"></span><br>
+<!-- 简写方式：使用‘|’围起来 -->
+<span th:text="|欢迎您，${user.name}|"></span>
+```
+
+智能数字计算：计算符号写在 `${ xxx }` 外面，可使用加减乘除与比较，三元运算
+
+```html
+<!-- 运算：运算符放在${}外 -->
+10年后，我<span th:text="${user.age} + 10"></span>岁<br>
+<!-- 比较：gt (>), lt (<), ge (>=), le (<=), not (!), eq (==), neq/ne (!=) -->
+比较结果：<span th:text="${user.age} < ${user.friend.age}"></span><br>
+<!-- 三元运算 -->
+三元：<span th:text="${user.age}%2 == 0 ? '帅' : '不帅'"></span><br>
+<!-- 默认值：注意`?:`之间没有空格 -->
+默认值：<span th:text="${user.name} ?: '硅谷刘德华'"></span>
+```
+
+#### 2、th:object 解包
+
+`th:object` 标签用于配合 `*{}` 使用，可以定义一个标签体内的解包操作，用于省去 `Xxx.` 前缀。
+
+```html
+<h2>
+    <p th:text="${user.name}">Jack</p>
+    <p th:text="${user.age}">21</p>
+    <p th:text="${user.friend.name}">Rose</p>
+</h2>
+<!-- 等价于 -->
+<h2 th:object="${user}">
+    <p th:text="*{name}">Jack</p>
+    <p th:text="*{age}">21</p>
+    <p th:text="*{friend.name}">Rose</p>
+</h2>
+```
+
+`*{}`可以取出 `th:object` 指定的元素
+
+#### 3、th:each 循环遍历
+
+`th:each` 可以遍历集合元素，可以为`Iterable`、`Enumeration`、`Iterator`、`Map`、`Array`，一般用法：
+
+```html
+<table>
+    <tr th:each="user: ${users}">
+        <td th:text="${user.name}"></td>
+        <td th:text="${user.age}"></td>
+    </tr>
+</table>
+```
+
+可以通过第`二个元素 state` 来获取迭代状态，如索引，单双数等：
+
+```html
+<table>
+    <tr th:each="user,state: ${users}">
+        <td th:text="${stat.index + 1}"></td>
+        <td th:text="${user.name}"></td>
+        <td th:text="${user.age}"></td>
+    </tr>
+</table>
+```
+
+stat对象包含以下属性：
+
+- index，从0开始的角标
+- count，元素的个数，从1开始
+- size，总元素个数
+- current，当前遍历到的元素
+- even/odd，返回是否为奇偶，boolean值
+- first/last，返回是否为第一或最后，boolean值
+
+#### 4、th:if 分支判断
+
+如果 `th:if` 属性判断为true则渲染到页面，否则不渲染
+
+认定为True的情况如下：
+
+- 表达式值为true
+- 表达式值为非0数值或者字符串
+- 表达式值为字符串，但不是`"false"`,`"no"`,`"off"`
+- 表达式不是布尔、数字、字符中的任何一种
+
+>   其它情况包括null都被认定为false 
+
+#### 5、th:switch 分支选择
+
+这里要使用两个指令：`th:switch` 和 `th:case`，类似Java的switch case语句
+
+```html
+<div th:switch="${user.role}">
+    <p th:case="'admin'">用户是管理员</p>
+    <p th:case="'manager'">用户是经理</p>
+    <p th:case="*">用户是别的玩意</p>
+</div>
+```
+
+需要注意的是，一旦有一个th:case成立，其它的则不再判断。`th:case="*"`表示默认，放最后。
+
+#### 6、th:href 动态链接
+
+动态链接主要通过 `@` 来实现，有三种实现方式：
+
+```html
+<!-- 直接拼接字符串 -->
+<a th:href="@{'http://api.gmall.com/pms/brand?pageNum=' + ${pageNum}}">点我带你飞</a><br>
+<!-- 使用（）的形式定义参数 -->
+<a th:href="@{http://api.gmall.com/pms/brand/{id}(id=${id})}">点我带你飞</a><br>
+<!-- 使用（,,）的形式解析多个参数 -->
+<a th:href="@{http://api.gmall.com/pms/brand(pageNum=${pageNum}, pageSize=${pageSize})}">起飞吧</a>
+```
+
+>   `th:src`和`th:href`用法一致。 
+
+#### 7、th:action、th:value 表单
+
+```html
+<form th:action="@{/login}">
+    <input type="hidden" th:value="${url}" name="redirect_url">
+    用户名：<input type="text" name="username"><br />
+    密码：<input type="password" name="password"><br />
+    <input type="submit" value="登录"/>
+</form>
+```
+
+-   th:action	表单提交路径
+-   th:value	给表单元素绑定value值
+
+#### 8、Thymeleaf 内置对象与内置方法
+
+##### 内置对象
+
+1. **ctx** ：上下文对象。
+2. **vars** ：上下文变量。
+3. **locale**：上下文的语言环境。
+4. **request**：（仅在web上下文）的 HttpServletRequest 对象。
+5. **response**：（仅在web上下文）的 HttpServletResponse 对象。
+6. **session**：（仅在web上下文）的 HttpSession 对象。
+7. **servletContext**：（仅在web上下文）的 ServletContext 对象
+
+这里以常用的Session举例，用户登录成功后，会把用户信息放在Session中，Thymeleaf通过内置对象将值从session中获取。
+
+```java
+// java 代码将用户名放在session中
+session.setAttribute("userinfo",username);
+// Thymeleaf通过内置对象直接获取
+th:text="${session.userinfo}"
+```
+
+##### 内置工具类
+
+Thymeleaf中提供了一些内置工具类，并且在这些对象中提供了一些方法，方便我们来调用。获取这些对象，需要使用`#对象名`来引用。
+
+**常用的内置方法：**
+
+1. **strings**：字符串格式化方法，常用的Java方法它都有。比如：equals，equalsIgnoreCase，length，trim，toUpperCase，toLowerCase，indexOf，substring，replace，startsWith，endsWith，contains，containsIgnoreCase等
+
+2. **numbers**：数值格式化方法，常用的方法有：formatDecimal等
+
+3. **bools**：布尔方法，常用的方法有：isTrue，isFalse等
+
+4. **arrays**：数组方法，常用的方法有：toArray，length，isEmpty，contains，containsAll等
+
+5. **lists**，**sets**：集合方法，常用的方法有：toList，size，isEmpty，contains，containsAll，sort等
+
+6. **maps**：对象方法，常用的方法有：size，isEmpty，containsKey，containsValue等
+
+7. **dates**：日期方法，常用的方法有：format，year，month，hour，createNow等
+
+用法：见名知意，类似于Java中的方法，但第一个参数通常是请求域中的对象
+
+代码示例：在页面中处理客户端传入的时间及数字
+
+```html
+<h1 th:text="${#dates.format(today, 'yyyy-MM-dd')}"></h1>
+<!-- 参数1是请求域中对象，参数2是指小数点前保留1位，参数3小数点后保留2位 -->
+<h1 th:text="${#numbers.formatDecimal(user.age, 1, 2)}"></h1>
+```
+
+#### 6、js内联 th:inline
+
+js内敛的作用：将thymeleaf 的内容交给js处理，在 `<script>`标签中使用 `th:inline=“javascript” `来委托实现
+
+```html
+<script th:inline="javascript">
+    // 使用两层中括号实现+${}获取模板的值 [[${xxx}]]
+    const user = [[${user}]];
+    const users = [[${users}]];
+    const age = [[${user.age}]];
+    console.log(user);
+    console.log(users);
+    console.log(age)
+</script>
+```
+
+#### 7、页面引用
+
+使用 `th:fragment` 定义一个通用的html片段，使用 `th:insert`、`th:replace`、`th:include`来引入定义好的html片段
+
+```html
+<!-- 定义一个通用的fragment -->
+<footer th:fragment="copy">
+    <script type="text/javascript" th:src="@{/plugins/jquery/jquery-3.0.2.js}"></script>
+</footer>
+
+<!--templatename::selector：”::”前面是模板文件名，后面是选择器
+	- selector：只写选择器，这里指fragment名称，则加载本页面对应的fragment
+	- templatename：只写模板文件名，则加载整个页面
+-->
+<div th:insert="::copy"></div>
+<div th:replace="::copy"></div>
+<div th:include="::copy"></div>
+```
+
+解析后：
+
+```html
+<footer>
+    <script type="text/javascript" src="/plugins/jquery/jquery-3.0.2.js"></script>
+</footer>
+
+<div>
+    <footer>
+        <script type="text/javascript" src="/plugins/jquery/jquery-3.0.2.js"></script>
+    </footer>
+</div>
+<footer>
+    <script type="text/javascript" src="/plugins/jquery/jquery-3.0.2.js"></script>
+</footer>
+<div>
+    <script type="text/javascript" src="/plugins/jquery/jquery-3.0.2.js"></script>
+</div>
+```
+
+#### 8、标签局部变量 th:with
+
+可以在标签上定义局部变量，可以在局部变量所在标签体内使用，并覆盖页面变量。
+
+```html
+<div th:with="${aa=20}">
+    <!-- 标签体内可以使用aa的值为20 -->
+</div>
+```
 
