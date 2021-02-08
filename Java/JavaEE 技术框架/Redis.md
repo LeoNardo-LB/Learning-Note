@@ -1059,6 +1059,10 @@ el表达式的几种取值方式：
 
 MyBatis 使用 Redis 代替本地缓存，可以实现多主机共享缓存。使用Spring框架提供的 RedisTemplate 来操作Redis。
 
+### 缓存实现原理
+
+![image-20210203145436370](_images/image-20210203145436370.png)
+
 ### 环境准备
 
 1.  spring，mybatis整合完毕的环境
@@ -1764,6 +1768,28 @@ RSM：Redis Session Manager
 
 
 
+## Redis 分布式锁的实现
+
+本地锁只在服务器单例时有效。若服务器多实例，则在并发情况下，成功的次数为：【(请求次数/示例数) ~ 请求次数】区间内。
+
+### 分布式锁特性
+
+1.  独占/排它/互斥
+2.  防止死锁发生
+3.  保证原子性
+
+### 分布式锁的实现原理
+
+![image-20210203144444182](_images/image-20210203144444182.png)
+
+setnx：不存在则添加，存在则不做任何操作。每次操作返回影响的数据数量。
+
+>   调用setnx XXX，不存在则返回1，存在则返回0
+
+### 代码基本实现（Springboot-data-redis）
+
+
+
 
 
 ## 面试相关
@@ -1809,3 +1835,22 @@ Cache Hit Ratio [com.example.springbootmybatis.dao.AccountDao]: 0.5
 2.  调用频率
 3.  用户体验（缓急程度，响应时间）
 4.  等等。。
+
+
+
+## Redis 执行Lua脚本
+
+```bash
+EVAL script numkeys key [key ...] arg [arg ...] 
+```
+
+-   EVAL：开始执行Lua脚本的标识
+-   script：Lua脚本
+-   numkeys：key的数量（从左到右数，key接收就是args
+-   [keys ...]：key变量数组
+-   [args ...]：arg变量数组
+
+脚本script中获取传入的参数（keys、args）：下标从1开始
+
+-   获取keys参数：`KEYS[1]/KEYS[2]...`
+-   获取args参数：`ARGV[1]/ARGV[2]...`

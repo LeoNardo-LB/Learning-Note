@@ -721,7 +721,7 @@ public static void main(String[] args) throws IOException, TimeoutException {
 
 举例：
 
-`item.#`：能够匹配`item.insert.abc` 或者 `item.insert``
+`item.#`：能够匹配`item.insert.abc` 或者 `item.insert`
 
 `item.*`：只能匹配`item.insert
 
@@ -861,7 +861,9 @@ public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProp
 
 ### 快速上手
 
-使用步骤如下：
+基本使用步骤如下：
+
+#### 1、编写消息提供者
 
 1、引入amqp 依赖
 
@@ -874,94 +876,345 @@ public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProp
 
 2、编写 SpringBoot配置文件，指定RabbitMQ的url，port及用户名密码等信息
 
-```yaml
-spring:
-  rabbitmq:
-    host: 192.168.92.128
-    port: 5672
-    username: root
-    password: 123456
-    virtual-host: /v1
+```properties
+server.port=12010
+spring.rabbitmq.host=192.168.72.132
+spring.rabbitmq.password=leonardo
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=leonardo
+spring.rabbitmq.virtual-host=/leo
 ```
 
 3、使用配置类来声明 **交换机、消息队列及绑定关系**。这一步可以由第三方来实现
 
 ```java
-package com.atguigu.bootrabbitmq.config;
-
-import com.rabbitmq.client.AMQP;
-import org.springframework.amqp.core.*;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-/**
- * Author: Administrator
- * Create: 2020/12/11
- **/
 @Configuration
-public class RabbitMQConfig {
+public class RabbitmqConfig {
 
     // 声明交换机
-    @Bean("boot_topic_exchange")
-    public AMQP.Exchange declearExchange() {
-        return ExchangeBuilder.topicExchange("boot_topic_exchange").build();
+    @Bean
+    public Exchange buildExchange() {
+        return ExchangeBuilder.topicExchange("SPRING_RABBIT_EXCHANGE").durable(true).build();
     }
 
     // 声明队列
-    @Bean("boot_queue1")
-    public Queue declearQueue() {
-        return QueueBuilder.durable("boot_queue1").build();
+    @Bean
+    public Queue getQueue() {
+        return QueueBuilder.durable("SPRING_QUEUE").build();
     }
 
-    // 绑定队列到Exchange上，并指定routingKey
+    // 绑定交换机与队列
     @Bean
-    public Binding bindQueue2Exchange(
-        @Qualifier("boot_topic_exchange") Exchange exchange,
-        @Qualifier("boot_queue1") Queue queue) {
-        return BindingBuilder.bind(queue).to(exchange).with("boot.#").noargs();
+    public Binding bindExchangeAndQueue(Exchange exchange, Queue queue) {
+        return BindingBuilder
+            .bind(queue)	// 绑定队列
+            .to(exchange)	// 到交换机上
+            .with("a.#")	// with用于指定路由key，可以传入一个或多个（枚举）
+            .noargs();	//	没有参数
     }
+
 }
 ```
 
 4、编写消息提供者
 
 ```java
-@Component
-public class BootProducer {
+@SpringBootTest
+class RabbitmqProviderApplicationTests {
 
     @Autowired
     RabbitTemplate rabbitTemplate;
 
-    public void publishMessage() {
-        // 向交换机发送消息，指定routingKey即可。
-        rabbitTemplate.convertAndSend("boot_topic_exchange","boot.msg", "SpringBoot整合RabbitMQ的消息");
+    @Test
+    void contextLoads() {
+        System.out.println("rabbitTemplate = " + rabbitTemplate);
+        rabbitTemplate.convertAndSend("SPRING_RABBIT_EXCHANGE", "c.b", "hello spring rabbitmq");
     }
 }
 ```
 
-5、编写消息消费者
+#### 2、编写消息消费者
+
+1、引入amqp 依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-amqp</artifactId>
+</dependency>
+```
+
+2、消费者配置
+
+```properties
+server.port=12010
+spring.rabbitmq.host=192.168.72.132
+spring.rabbitmq.port=5672
+spring.rabbitmq.virtual-host=/leo
+spring.rabbitmq.username=leonardo
+spring.rabbitmq.password=leonardo
+# simple-listener容器使用一个额外线程处理消息  direct-listener（监听器）容器直接使用consumer线程
+spring.rabbitmq.listener.type=simple
+# 能者多劳
+spring.rabbitmq.listener.simple.prefetch=1
+# 初始化多个消费者线程，避免消息堆积
+spring.rabbitmq.listener.simple.concurrency=3
+```
+
+3、编写队列监听器，用于监听消息
 
 ```java
 @Component
-public class BootConsumer {
+public class RabbitmqListener {
 
-    @RabbitListener(queues = "boot_queue1")
-    public void listenMessage(String msg){
-        System.out.println("msg = " + msg);
+    @RabbitListener(queues = "SPRING_QUEUE")
+    public void listenMethod(String msg, Channel channel, Message message) {
+        System.out.println("收到消息：" + msg);
+    }
+
+}
+```
+
+### 交换机、队列与绑定关系的创建
+
+有多种方式可以创建交换机、消息队列及绑定关系
+
+1.  在配置类中创建(SpringBoot)
+
+2.  在监听者创建(SpringBoot)
+
+3.  第三方创建
+
+#### 1、在配置类中创建交换机、队列及绑定关系
+
+```java
+package com.example.rabbitmq.provider.config;
+
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitmqConfig {
+
+    // 创建交换机
+    @Bean
+    public Exchange buildExchange() {
+        return ExchangeBuilder.topicExchange("SPRING_RABBIT_EXCHANGE").durable(true).build();
+    }
+
+    // 创建队列
+    @Bean
+    public Queue getQueue() {
+        return QueueBuilder.durable("SPRING_QUEUE").build();
+    }
+
+    // 创建绑定队列到交换机上及RoutingKey
+    @Bean
+    public Binding bindExchangeAndQueue(Exchange exchange, Queue queue) {
+        return BindingBuilder
+            .bind(queue)	// 绑定队列
+            .to(exchange)	// 到交换机上
+            .with("a.#")	// with用于指定路由key，可以传入一个或多个（枚举）
+            .noargs();		// no args 没有参数
+    }
+
+}
+```
+
+#### 2、在监听者创建交换机、队列及绑定关系
+
+```java
+// 在监听方法上声明交换机，队列及绑定关系与routingKey
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(value = "SPRING_QUEUE2", durable = "true"),
+        exchange = @Exchange(value = "SPRING_RABBIT_EXCHANGE2", type = ExchangeTypes.TOPIC, ignoreDeclarationExceptions = "true"),
+        key = "c.#"
+))
+public void listenMethod2(String msg, Channel channel, Message message) {
+    System.out.println("收到消息：" + msg);
+}
+```
+
+### 设置消息到达回调
+
+1、在消息提供方的Springboot配置文件配置开启回调。
+
+```properties
+# SIMPLE-同步确认（阻塞） CORRELATED-异步确认
+spring.rabbitmq.publisher-confirm-type=simple   
+# 确认消息是否到达队列
+spring.rabbitmq.publisher-returns=true  
+```
+
+2、在消息提供方的配置类中，对RabbitTemplate进行设置：
+
+```java
+@Autowired
+RabbitTemplate rabbitTemplate;
+
+@PostConstruct
+public void init() {
+    // 设置数据到达交换机的回调函数
+    rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+        if (ack) {
+            log.info("数据已到达交换机");
+        } else {
+            log.warn("数据未到达交换机");
+        }
+    });
+
+    // 设置数据未到达队列的回调函数
+    rabbitTemplate.setReturnsCallback((message) -> {
+        log.warn("数据未到达队列！");
+        log.warn("返回消息为：状态码：{}, 交换机：{}, 路由键：{}, 消息内容：{}"
+                , message.getReplyCode(), message.getExchange(), message.getRoutingKey(), message.getMessage());
+    });
+}
+```
+>   消息交换机回调：无论消息是否到达都会回调，ack为回调状态
+>
+>   消息队列回调：当消息无法到达消息队列时才回调
+
+### 设置手动确认消息
+
+在**消费者端**，手动确认消息可以控制更加细粒化地控制消息返回的时机，用于事务的控制，步骤如下：
+
+1、Springboot配置：关闭自动确认
+
+```properties
+# manual-手动  auto-自动（无异常直接确认，有异常无限重试） none-不重试
+spring.rabbitmq.listener.simple.acknowledge-mode=none
+```
+
+2、在监听方法中，根据不同业务逻辑做不同的操作
+
+```java
+@RabbitListener(queues = "SPRING_QUEUE")
+public void listenMethod(String msg, Channel channel, Message message) throws IOException {
+    try {
+        System.out.println("收到消息：" + msg);
+        int i = 1 / 0;
+        // 手动确认消息
+        channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+    } catch (Exception e) {
+        e.printStackTrace();
+        // 此方法可以判断消息是否重入队
+        if (!message.getMessageProperties().getRedelivered()) {
+            // 未重入队，则为第一次的消息，则重入
+            channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
+        } else {
+            // 已重入队，则为第二次的消息，则丢弃
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, false);
+        }
     }
 }
 ```
 
-### @RabbitListener注解属性
-
-
-
-### 手动消息确认
-
-
-
 ### 绑定死信队列
 
+**死信队列：**如果队列里的消息出现以下情况：
 
+1. 消息被否定确认，使用 `channel.basicNack` 或 `channel.basicReject` ，并且此时`requeue` 属性被设置为`false`。
+2. 消息在队列的存活时间超过设置的TTL时间。
+3. 消息队列的消息数量已经超过最大队列长度。
 
+那么该消息将成为“死信”。
+
+“死信”消息会被RabbitMQ进行特殊处理，如果配置了死信队列信息，那么该消息将会被丢进死信队列中，如果没有配置，则该消息将会被丢弃。
+
+>   官方并没有死信队列名词，通常意义上将死信（dead-letter）存放的队列称为死信队列。
+
+#### 消息的延时处理
+
+死信队列一般与延时队列配合使用时可以作延时处理，原理是当延时队列的消息过期后，过期消息被放入死信队列，此时有Listener监听死信队列，从死信队列获取消息并处理。
+
+![image-20210203190234416](_images/image-20210203190234416.png)
+
+**延迟-死信队列应用场景**：
+
+-   订单在十分钟之内未支付则自动取消。
+-   新创建的店铺，如果在十天内都没有上传过商品，则自动发送消息提醒。
+-   账单在一周内未支付，则自动结算。
+-   用户注册成功后，如果三天内没有登陆则进行短信提醒。
+-   用户发起退款，如果三天内没有得到处理则通知相关运营人员。
+-   预定会议后，需要在预定的时间点前十分钟通知各个与会人员参加会议。
+
+**使用步骤**：
+
+1. 声明延时交换机
+
+2. 声明延时队列
+
+    ```
+    x-message-ttl：指定TTL时间
+    x-dead-letter-exchange：死信转发所需的死信交换机（DLX）
+    x-dead-letter-routing-key：转发死信时的routingKey（DLK）
+    ```
+
+3. 延时队列绑定到延时交换机
+
+4. 声明死信交换机（DLX）
+
+5. 声明死信队列（DLQ）
+
+6. 死信队列绑定到死信交换机，rontingKey要和第2步的DLK一致。
+
+**消息提供方**：
+
+```java
+@Configuration
+public class DeadLetterConfig {
+
+    // 声明延迟交换机（需要延迟处理的消息都发到这）
+    @Bean
+    public TopicExchange delayExchange() {
+        return ExchangeBuilder.topicExchange("DELAY_EXCHANGE").durable(true).build();
+    }
+
+    // 声明延迟队列，需要指定消息过期后存放的死信交换机及交换机的路由key
+    @Bean
+    public Queue delayQueue() {
+        return QueueBuilder.durable("DELAY_QUEUE")
+                       .withArgument("x-message-ttl", 60000)   //延迟时间，单位毫秒
+                       .withArgument("x-dead-letter-exchange", "SPRING_DEAD_EXCHANGE")   //指定死信交换机
+                       .withArgument("x-dead-letter-routing-key", "dead.*")  //指定死信交换机路由键
+                       .build();
+    }
+
+    // 绑定延迟队列到延迟交换机上
+    @Bean
+    public Binding delayBinding(Exchange delayExchange, Queue delayQueue) {
+        return BindingBuilder.bind(delayQueue).to(delayExchange).with("delay.*").noargs();
+    }
+
+    // 声明死信交换机，名称由延迟队列指定
+    @Bean
+    public TopicExchange deadExchange() {
+        return ExchangeBuilder.topicExchange("SPRING_DEAD_EXCHANGE").build();
+    }
+
+    // 声明死信队列
+    @Bean
+    public Queue deadQueue() {
+        return QueueBuilder.durable("SPRING_DEAD_QUEUE").build();
+    }
+
+    // 绑定死信队列到死信交换机上，routingKey由延迟队列指定
+    @Bean
+    public Binding deadBinding(Exchange deadExchange, Queue deadQueue) {
+        return BindingBuilder.bind(deadQueue).to(deadExchange).with("dead.*").noargs();
+    }
+
+}
+```
+
+**消息消费方**：监听死信队列即可。
+
+```java
+@RabbitListener(queues = "SPRING_DEAD_QUEUE")
+public void listenDeadQueueMethod(String message){
+    System.out.println(message);
+    // 业务逻辑
+}
+```
