@@ -1217,6 +1217,94 @@ public static <T> void logAfter(JoinPoint joinPoint) {
 </beans>
 ```
 
+### 自定义切面类及注解
+
+使用注解的方式来确定切入点，可以灵活地搭建切入点的增强功能。步骤如下：
+
+1.  创建切入点注解，该注解用于标注在切入点
+2.  创建切面类，使用注解的方式来关联切入点注解，并使用各类通知方法来增强功能
+3.  将切入点注解标注在目标方法上
+
+#### 1、创建切入点注解
+
+例如：需要创建一个用于缓存的注解，标注位置为方法。以下为缓存需要用到的属性
+
+```java
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface GmallCache {
+
+    /**
+     * 前缀
+     * @return
+     */
+    String perfix() default "";
+
+    /**
+     * 缓存超时时间
+     * @return
+     */
+    int timeout() default 5;
+
+    /**
+     * 缓存随机延长时间，用于防止缓存雪崩
+     * @return
+     */
+    int random() default 5;
+
+    /**
+     * 防止缓存击穿的锁
+     * @return
+     */
+    String lockName() default "lock";
+
+}
+```
+
+#### 2、创建切面类
+
+```java
+@Component	// 需要加入IOC容器进行管理
+@Aspect
+public class GmallCacheAspect {
+
+    @Around("@annotation(com.atguigu.gmall.index.annotation.GmallCache)")
+    public Object gmallCacheAround(ProceedingJoinPoint joinPoint) throws Throwable {
+        // 获取方法签名
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        // 获取注解本体类型
+        GmallCache annotation = signature.getMethod().getAnnotation(GmallCache.class);
+        // 获取注解中的各种属性
+        String perfix = annotation.perfix();
+        Integer timeout = annotation.timeout();
+        Integer random = annotation.random();
+        String lockname = annotation.lockName();
+        // 获取切入点的参数
+        Object[] args = joinPoint.getArgs();
+
+		// 前置增强逻辑。。。
+        
+        // 执行目标方法
+        Object proceedObj = joinPoint.proceed(args);
+        
+        // 后置增强逻辑。。。
+
+        return proceedObj;
+    }
+
+}
+```
+
+#### 3、标注再目标方法上
+
+```java
+@GmallCache( perfix = "index:category:cache:", lockName = "lock", random = 5, timeout = 10)
+public List<CategoryEntity> queryLevel23CategoriesAnnotation(Long pid) {
+    List<CategoryEntity> categoryEntities = pmsFeignClient.queryLevel23Categories(pid);
+    return categoryEntities;
+}
+```
+
 
 
 ## Spring 声明式事务

@@ -1786,9 +1786,232 @@ setnx：不存在则添加，存在则不做任何操作。每次操作返回影
 
 >   调用setnx XXX，不存在则返回1，存在则返回0
 
-### 代码基本实现（Springboot-data-redis）
+### 代码实现
 
+#### 1、测试无锁
 
+```java
+public void testNoLock() {
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+}
+```
+
+#### 2、测试本地锁
+
+```java
+public synchronized void testLocalLock() {
+    // 查询redis中的num值
+    String value = this.stringRedisTemplate.opsForValue().get("num");
+    // 没有该值return
+    if (StringUtils.isBlank(value)) {
+        return;
+    }
+    // 有值就转成成int
+    int num = Integer.parseInt(value);
+    // 把redis中的num值+1
+    this.stringRedisTemplate.opsForValue().set("num", String.valueOf(++num));
+}
+```
+
+#### 3、测试Redis基本锁
+
+```java
+public void testRedisBaseLock() throws InterruptedException {
+    String uuid = UUID.randomUUID().toString().replace("-", "");
+
+    Boolean doLock = false;
+    do {
+        doLock = stringRedisTemplate.opsForValue().setIfAbsent("lock", uuid);
+    } while (!doLock);
+
+    // 自增操作
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        stringRedisTemplate.opsForValue().set("number", "1");
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+
+    // 删除锁操作，判断是否是自己的锁，如果是，则删掉
+    String lock = stringRedisTemplate.opsForValue().get("lock");
+    if (uuid.equals(lock)) {
+        stringRedisTemplate.delete("lock");
+    }
+}
+```
+
+#### 4、测试Redis超时锁
+
+```java
+public void testRedisTimeoutLock() throws InterruptedException {
+    String uuid = UUID.randomUUID().toString().replace("-", "");
+
+    Boolean doLock = false;
+    do {
+        doLock = stringRedisTemplate.opsForValue().setIfAbsent("lock", uuid, 30l, TimeUnit.SECONDS);
+    } while (!doLock);
+
+    // 自增操作
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        stringRedisTemplate.opsForValue().set("number", "1");
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+
+    // 删除锁操作，判断是否是自己的锁，如果是，则删掉
+    String lock = stringRedisTemplate.opsForValue().get("lock");
+    if (uuid.equals(lock)) {
+        stringRedisTemplate.delete("lock");
+    }
+}
+```
+
+#### 5、测试 Redis 使用Lua脚本删除锁操作
+
+```java
+public void testRedisLuaLock() throws InterruptedException {
+    String uuid = UUID.randomUUID().toString().replace("-", "");
+
+    Boolean doLock = false;
+    do {
+        doLock = stringRedisTemplate.opsForValue().setIfAbsent("lock", uuid, 30l, TimeUnit.SECONDS);
+    } while (!doLock);
+
+    // 自增操作
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        stringRedisTemplate.opsForValue().set("number", "1");
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+
+    // lua 脚本删除锁操作
+    String luaScript = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+    DefaultRedisScript redisScript = new DefaultRedisScript<>(luaScript, Long.class);
+    // redisScript.setResultType(Long.class);
+    stringRedisTemplate.execute(redisScript, Arrays.asList("lock"), uuid);
+}
+```
+
+#### 6、测试Redis与Lua脚本可重入、自动续期锁
+
+```java
+public void testRedisLuaReentrantLock() throws InterruptedException {
+    // 生成UUID 作为自己锁的唯一标识
+    String uuid = UUID.randomUUID().toString().replace("-", "");
+
+    // 加锁
+    tryLock("lock", uuid, "10");
+
+    // 自增操作
+    // Thread.sleep(30*1000);
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        stringRedisTemplate.opsForValue().set("number", "1");
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+
+    // 解锁
+    releaseLock("lock", uuid);
+}
+
+// 加锁方法
+private Boolean tryLock(String lockName, String uuid, String expire) {
+    // lua脚本 自旋加锁
+    Boolean doLock = false;
+    do {
+        String incrbyScript = "if(redis.call('exists', KEYS[1]) == 0 or redis.call('hexists', KEYS[1], ARGV[1]) == 1) " +
+            "then " +
+            "  redis.call('hincrby', KEYS[1], ARGV[1], 1) " +
+            "  redis.call('expire', KEYS[1], ARGV[2]) " +
+            "  return 1 " +
+            "else " +
+            "  return 0 " +
+            "end";
+        doLock = stringRedisTemplate.execute(new DefaultRedisScript<>(incrbyScript, Boolean.class), Arrays.asList(lockName), uuid, expire)/* == 1 ? true : false*/;
+    } while (!doLock);
+    // 开启定时任务，自动续期
+    autoRenewExpire(lockName, uuid, expire);
+    return true;
+}
+
+// 自动续期
+private void autoRenewExpire(String lockName, String uuid, String expire) {
+    // timer为成员变量
+    timer = new Timer();
+    this.timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+            String renewScript = "if(redis.call('hexists', KEYS[1], ARGV[1]) == 1) " +
+                "then " +
+                "  return redis.call('expire', KEYS[1], ARGV[2]) " +
+                "else " +
+                "  return 0 " +
+                "end";
+            Boolean success = stringRedisTemplate.execute(new DefaultRedisScript<>(renewScript, Long.class), Arrays.asList(lockName), uuid, expire) == 1 ? true : false;
+            if (success) {
+                System.out.println("【" + lockName + ":" + uuid + "】自动续期，续期时长为" + expire + "秒");
+            } else {
+                System.out.println("锁已被释放，停止定时任务！");
+                timer.cancel();
+            }
+        }
+    }, Long.parseLong(expire) * 2 / 3 * 1000, Long.parseLong(expire) * 2 / 3 * 1000);
+}
+
+// 解锁操作
+private Boolean releaseLock(String lockName, String uuid) {
+    // lua 脚本删除锁操作
+    String decrbyScript = "if(redis.call('hexists', KEYS[1], ARGV[1]) == 0) " +
+        "then " +
+        "     return nil " +
+        "elseif(redis.call('hincrby', KEYS[1], ARGV[1], -1) == 0) " +
+        "     then return redis.call('del', KEYS[1]) " +
+        "else " +
+        "     return 0 " +
+        "end";
+    Long result = stringRedisTemplate.execute(new DefaultRedisScript<>(decrbyScript, Long.class), Arrays.asList("lock"), uuid);
+    if (result == null) {
+        throw new IllegalMonitorStateException("attempt to unlock lock, not locked by lockName: " + lockName + " with request: " + uuid);
+    }
+    return true;
+}
+```
+
+#### 7、使用Redisson实现分布式锁
+
+```java
+public void testRedissonLock() {
+    // 通过Redisson加锁
+    RLock lock = redissonClient.getLock("lock");
+
+    // 加锁
+    lock.lock();
+
+    // 自增操作
+    String number = this.stringRedisTemplate.opsForValue().get("number");
+    if (number == null) {
+        stringRedisTemplate.opsForValue().set("number", "1");
+        return;
+    }
+    int num = Integer.parseInt(number);
+    this.stringRedisTemplate.opsForValue().set("number", String.valueOf(++num));
+
+    // 解锁
+    lock.unlock();
+}
+```
 
 
 
@@ -1840,8 +2063,33 @@ Cache Hit Ratio [com.example.springbootmybatis.dao.AccountDao]: 0.5
 
 ## Redis 执行Lua脚本
 
+### 为什么要使用Lua脚本？
+
+正常情况下，Redis依次执行每个命令，命令之间相互独立。Redis的事务类似批处理，无法回滚，因此无法保证原子性。类似Java客户端操作Redis也是通过Redis指令来实现的。
+
+![image-20210214140202300](_images/image-20210214140202300.png)
+
+
+
+通过Lua脚本来执行Redis指令时，可以包装成一个指令单元，该指令单元具备原子性。
+
+![image-20210214140522431](_images/image-20210214140522431.png)
+
+### 基本语法
+
+#### 1、声明变量
+
+为了防止不必要的数据泄漏进 Lua 环境， Redis 脚本不允许创建全局变量。Lua脚本使用 `local` 关键字来声明局部变量
+
+```
+127.0.0.1:6379> eval 'local a = 10; return a' 0
+(integer) 10
+```
+
+#### 2、参数占位符
+
 ```bash
-EVAL script numkeys key [key ...] arg [arg ...] 
+EVAL script numkeys [keys ...] [args ...]
 ```
 
 -   EVAL：开始执行Lua脚本的标识
@@ -1854,3 +2102,54 @@ EVAL script numkeys key [key ...] arg [arg ...]
 
 -   获取keys参数：`KEYS[1]/KEYS[2]...`
 -   获取args参数：`ARGV[1]/ARGV[2]...`
+
+>   key 与 argv的区别：单机情况下没有区别，集群情况下，key会通过集群算法分布到不同的槽中，而argv不会。因此集群条件下推荐使用argv
+
+代码示例：
+
+1.  测试 key 与 argv 的值
+
+    ```bash
+    127.0.0.1:6379> EVAL "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}" 2 k1 k2 arg1 arg2
+    1) "k1"
+    2) "k2"
+    3) "arg1"
+    4) "arg2"
+    ```
+
+2.  测试 argv 的值
+
+    ```bash
+    127.0.0.1:6379> eval "return {ARGV[1],ARGV[2]}" 0 arg1 arg2
+    1) "arg1"
+    2) "arg2"
+    ```
+
+#### 3、Redis的Lua内置的 redis 对象
+
+`redis.call(<redis命令>,<命令参数>...)` 可以调用Redis中各种指令，如set、get、del、hset等
+
+代码示例：
+
+1.  设置k1为v1
+
+    ```bash
+    127.0.0.1:6379> eval 'return redis.call("set","k1","v1")' 0 #0为key的数量，必须指定
+    OK
+    ```
+
+2.  获取k1的值并返回
+
+    ```bash
+    127.0.0.1:6379> eval 'return redis.call("get","k1")' 0
+    "v1"
+    ```
+
+3.  删除k1
+
+    ```bash
+    127.0.0.1:6379> eval 'return redis.call("del","k1")' 0
+    (integer) 1
+    ```
+
+    

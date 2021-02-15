@@ -806,10 +806,12 @@ ThreadPoolExecutor自带的拒绝策略如下：
 采用不同拒绝策略：在自定义构造ThreadPoolExecutor时，可以采用不同拒绝策略
 
 ```java
-ThreadPoolExecutor executor = new ThreadPoolExecutor(5, 10, 60, TimeUnit.SECONDS,
-                                                     new ArrayBlockingQueue<>(5),
-                                                     Executors.defaultThreadFactory(),
-                                                     new ThreadPoolExecutor.CallerRunsPolicy()); // 可以设置不同拒绝策略 
+ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    5, 10, 60, TimeUnit.SECONDS,
+    new ArrayBlockingQueue<>(5),
+    Executors.defaultThreadFactory(),
+    new ThreadPoolExecutor.CallerRunsPolicy()	// 可以设置不同拒绝策略 
+); 
 ```
 
 自定义拒绝策略：实现 `RejectedExecutionHandler` 接口中的 `rejectedExecution` 方法
@@ -907,11 +909,19 @@ public static void main(String[] args) {
 
 ### JMM
 
+Java Memory Model Java内存模型，
+
 ### volatile 关键字
+
+
 
 ### CAS
 
+Compare And Swap 比较并交换
+
 ### AQS
+
+AbstractQueuedSynchronizer 抽象的队列式的同步器
 
 ### 锁升级过程
 
