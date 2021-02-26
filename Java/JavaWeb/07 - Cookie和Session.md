@@ -133,7 +133,16 @@ protected void defaultLife(HttpServletRequest req, HttpServletResponse resp) thr
 }
 ```
 
-### Cookie 有效路径 Path
+### Cookie 作用域 （domain）
+
+作用域的四大原则：
+
+-   Cookie默认作用域在当前域名下
+-   子域名可以操作父域名的cookie信息
+-   父域名不可以操作子域名的cookie信息
+-   兄弟域名之间不可以互相操作
+
+### Cookie 有效路径 （Path）
 
 每个客户端（浏览器）保存的 cookie 中，有一个path属性。该属性决定了客户端（浏览器）在访问url时，是否要将该Cookie发送给服务器（访问cookie过滤）。默认为访问每个url的工程路径（`http://ip:port/contextPath/`）。
 

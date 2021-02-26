@@ -313,7 +313,7 @@ CopyOnWrite，写时复制
 
 ### ConcurrentHashMap
 
-目前表较完善的线程安全的Map类
+目前表较完善的线程安全的Map类，兼具线程安全与效率。原理：分段锁，在添加元素，清除所有元素、树化、合并map、计算扩容大小时添加 Sychironized 关键字
 
 
 
@@ -903,21 +903,242 @@ public static void main(String[] args) {
 }
 ```
 
+### Executors工具类的缺陷
+
+
+
+
+
+## 异步编排 CompletableFuture 
+
+在Java 8中, 新增加了一个包含50个方法左右的类: CompletableFuture，提供了非常强大的Future的扩展功能，可以帮助我们简化异步编程的复杂性，提供了函数式编程的能力，可以通过回调的方式处理计算结果，并且提供了转换和组合CompletableFuture的方法。
+
+CompletableFuture和FutureTask同属于Future接口的实现类，都可以获取线程的执行结果。
+
+![1568552614487](_images/1568552614487.png)
+
+### 初始化方法
+
+CompletableFuture 提供了四个静态方法来创建一个异步操作。
+
+```java
+// 没有返回值与异常
+public static CompletableFuture<Void> runAsync(Runnable runnable);
+public static CompletableFuture<Void> runAsync(Runnable runnable, Executor executor);
+
+// 有返回值与异常
+public static <U> CompletableFuture<U> supplyAsync(Supplier<U> supplier);
+public static <U> CompletableFuture<U> supplyAsync(Supplier<U> supplier, Executor executor);
+```
+
+Executor参数为指定线程池，可以自定义线程池并指定。**没有指定Executor的方法会使用ForkJoinPool.commonPool() 作为它的线程池执行异步代码**。如果指定线程池，则使用指定的线程池运行。以下所有的方法都类同。
+
+### 计算完成时方法
+
+当CompletableFuture的计算结果完成，或者抛出异常的时候，可以执行特定的Action。主要是下面的方法：
+
+```java
+// 计算完成时调用
+public CompletableFuture<T> whenComplete(BiConsumer<? super T,? super Throwable> action);
+
+// 计算完成时异步调用
+public CompletableFuture<T> whenCompleteAsync(BiConsumer<? super T,? super Throwable> action);
+public CompletableFuture<T> whenCompleteAsync(BiConsumer<? super T,? super Throwable> action, Executor executor);
+
+// 出现异常时调用
+public CompletableFuture<T> exceptionally(Function<Throwable,? extends T> fn);
+```
+
+whenComplete 和 whenCompleteAsync 的区别：
+
+-   whenComplete：是执行当前任务的线程执行继续执行 whenComplete 的任务。
+
+-   whenCompleteAsync：是执行把 whenCompleteAsync 这个任务继续提交给线程池来进行执行。
+
+    >   `XxxAsync`：有 Async 则开启新线程执行，一般都会使用带 Async的方法
+
+### 串行、并行化方法
+
+串行化与并行化是指各个任务之间运行的并列、先后顺序。
+
+![image-20210220114210376](_images/image-20210220114210376.png)
+
+在 completableFuture中并不提供方法级别的设置方式，而提供设计上的设置方式。因此下面几个方法可以通过调用方式的不同实现串行或并行。
+
+```java
+// 接收上一个方法的参数，并提供返回值
+public <U> CompletableFuture<U> thenApply(Function<? super T,? extends U> fn);
+public <U> CompletableFuture<U> thenApplyAsync(Function<? super T,? extends U> fn);
+public <U> CompletableFuture<U> thenApplyAsync(Function<? super T,? extends U> fn, Executor executor);
+
+// 接收上一个方法的参数，不提供返回值
+public CompletionStage<Void> thenAccept(Consumer<? super T> action);
+public CompletionStage<Void> thenAcceptAsync(Consumer<? super T> action);
+public CompletionStage<Void> thenAcceptAsync(Consumer<? super T> action,Executor executor);
+
+// 不接受参数，不提供返回值
+public CompletionStage<Void> thenRun(Runnable action);
+public CompletionStage<Void> thenRunAsync(Runnable action);
+public CompletionStage<Void> thenRunAsync(Runnable action,Executor executor);
+```
+
+#### 代码示例
+
+1、串行执行：在串/并行方法后接着添加串/并行方法
+
+![image-20210220115315547](_images/image-20210220115315547.png)
+
+```java
+public static void main(String[] args) throws IOException {
+
+    System.out.println("主线程开始...");
+
+    // 开启一个异步编排线程
+    CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+        System.out.println("这是 future 初始方法");
+        return "future 1";
+    }).thenApply(res -> {   // 串行化
+        System.out.println("这是 thenApply 第一个串行方法");
+        System.out.println("上个方法返回值为: " + res);
+        return "thenApply 1";
+    }).thenApply(res -> {   // 串行化
+        System.out.println("这是 thenApply 第二个串行方法");
+        System.out.println("上个方法返回值为: " + res);
+        return "thenApply 2";
+    });
+
+    System.out.println("主线程阻塞中...");
+
+    System.in.read();
+
+    System.out.println("主线程结束!");
+}
+```
+
+2、并行执行：对同一个（同一次）CompletableFuture对象添加多个串/并行方法
+
+![image-20210220115849644](_images/image-20210220115849644.png)
+
+```java
+public static void main(String[] args) throws IOException {
+
+    System.out.println("主线程开始...");
+
+    // 开启一个异步编排线程
+    CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+        System.out.println("这是 future 初始方法");
+        return "future 1";
+    });
+
+    future.thenApply(res -> {   // 并行添加多个 串并行方法
+        System.out.println("这是 thenApply 第一个并行方法");
+        System.out.println("上个方法返回值为: " + res);
+        return "thenApply 1";
+    });
+    future.thenApply(res -> {   // 并行添加多个 串并行方法
+        System.out.println("这是 thenApply 第二个并行方法");
+        System.out.println("上个方法返回值为: " + res);
+        return "thenApply 2";
+    });
+    future.thenApply(res -> {   // 并行添加多个 串并行方法
+        System.out.println("这是 thenApply 第三个并行方法");
+        System.out.println("上个方法返回值为: " + res);
+        return "thenApply 3";
+    });
+    System.out.println("主线程阻塞中...");
+
+    System.in.read();
+
+    System.out.println("主线程结束!");
+}
+```
+
+>   当然也可以并行 + 串行组合使用
+
+### 组合方法
+
+组合方法可以在一组任务全部结束或其中的某个任务结束后开始执行一段逻辑
+
+```java
+// 所有任务结束后执行
+public static CompletableFuture<Void> allOf(CompletableFuture<?>... cfs);
+
+// 某个任务结束后就执行
+public static CompletableFuture<Object> anyOf(CompletableFuture<?>... cfs);
+```
+
+#### 代码示例
+
+```java
+public static void main(String[] args) throws IOException {
+
+    CompletableFuture<String> future1 = CompletableFuture.supplyAsync(() -> {
+        System.out.println("开启第一个任务, 耗时1s");
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "mission 1";
+    });
+
+    future1.thenApplyAsync(s -> {
+        System.out.println("开启第一个任务的串行任务1, 耗时2s, 上个任务的返回值为: " + s);
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "mission 3";
+    }).thenApplyAsync(s -> {
+        System.out.println("开启第一个任务的串行任务2, 耗时3s, 上个任务的返回值为: " + s);
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "mission 4";
+    }).thenApplyAsync(s -> {
+        System.out.println("开启第一个任务的串行任务3, 耗时4s, 上个任务的返回值为: " + s);
+        try {
+            TimeUnit.SECONDS.sleep(4);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "mission 5";
+    });
+
+    CompletableFuture<String> future2 = CompletableFuture.supplyAsync(() -> {
+        System.out.println("开启第一个任务的并行任务, 耗时12s");
+        try {
+            TimeUnit.SECONDS.sleep(12);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "mission 2";
+    });
+
+    CompletableFuture.allOf(future1, future2).thenAcceptAsync(res -> {
+        System.out.println("以上所有任务都完成了");
+    }).join();  // join 可以在执行完该线程后再执行当前线程(主线程)
+}
+```
+
 
 
 ## 相关原理
 
 ### JMM
 
-Java Memory Model Java内存模型，
+Java Memory Model Java内存模型，关键字：线程私有、工作空间、主存。
 
 ### volatile 关键字
 
-
+关键字：重排序、内存屏障
 
 ### CAS
 
-Compare And Swap 比较并交换
+Compare And Swap 比较并交换。关键字：内存偏移、新值旧值、ABA问题、乐观锁
 
 ### AQS
 
@@ -925,3 +1146,4 @@ AbstractQueuedSynchronizer 抽象的队列式的同步器
 
 ### 锁升级过程
 
+关键词：偏向锁 -> 轻量级锁 -> 重量级锁

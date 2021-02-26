@@ -259,7 +259,6 @@ spring.profiles.active=[dev | prod | test]
 spring:
   profiles:
     active: test
-
 ---
 spring:
   config:
@@ -267,7 +266,6 @@ spring:
       on-profile: dev
 server:
   port: 8081
-
 ---
 spring:
   config:
@@ -291,6 +289,178 @@ server:
 使用 `spring.profiles.include` 属性指定配置文件的缩写即可。
 
 >   缩写举例：`application-dev.properties | application-dev.yml` 的缩写是 `dev`
+
+
+
+## SpringTask 声明式异步
+
+SpringTask 可以在单个Spring容器中实现任务(方法）的异步处理。
+
+### 快速上手
+
+1、引入SpringTask依赖（springboot 的 web依赖中有）
+
+2、开启异步支持：在配置类上加上 `@EnableAsync` 注解
+
+3、在需要异步的方法上加上 `@Async` 注解
+
+```java
+@RequestMapping("/test1")
+public String test1() {
+    taskService.returnAsyncFuture();	// 异步执行, 不会阻塞主线程
+    // Integer result = future.get();	// 如果要获取结果集, 则会阻塞主线程
+    return "OK!!";
+}
+
+// 异步方法：
+@Async
+public Future<Integer> returnAsyncFuture() {
+    System.out.println("【Async】进入异步任务！");
+    int a = 10, b = 20;
+    try {
+        TimeUnit.SECONDS.sleep(5);
+    } catch (InterruptedException e) {
+        AsyncResult.forExecutionException(e);
+    }
+    System.out.println("【Async】异步任务执行结束！");
+    return AsyncResult.forValue(a + b);
+}
+```
+
+
+
+### 增强功能
+
+#### 1、获取子任务返回结果集 与 异常信息
+
+-   返回Future对象，使用 `AsyncResult` 的forValue 或 forExcutionException 来返回
+
+    ```java
+    // 异步方法：
+    @Async
+    public Future<Integer> returnAsyncFutureExceptionTest() {
+        System.out.println("【Async】进入异步任务！");
+        int a = 10, b = 20;
+        try {
+            TimeUnit.SECONDS.sleep(5);
+            int i = 5 / 0;
+        } catch (InterruptedException e) {
+            AsyncResult.forExecutionException(e);	// 封装异常信息(在外部调用 future.get()相当于抛出异常)
+        }
+        System.out.println("【Async】异步任务执行结束！");
+        return AsyncResult.forValue(a + b);	// 返回future结果
+    }
+    ```
+
+-   返回 `ListenerFuture` 对象（Spring框架提供），主线程可以监听获取成功的结果集与失败的异常对象
+
+    ListenableFuture 对象相当于前端中的Ajax，可以异步执行，指定成功回调与失败回调。
+
+    ```java
+    // 异步方法：依然使用 `AsyncResult` 对象来返回结果与异常
+    @Async
+    public ListenableFuture<Integer> testListenalbeFuture() {
+        System.out.println("【Async】进入异步任务！");
+        try {
+            TimeUnit.SECONDS.sleep(5);
+            int i = 10 / 0;     // 模拟出现异常
+        } catch (InterruptedException e) {
+            System.out.println("【Async】异步任务执行异常！！！");
+            AsyncResult.forExecutionException(e);
+        }
+        System.out.println("【Async】异步任务执行结束！");
+        return AsyncResult.forValue(12345);
+    }
+    
+    // 调用处：
+    @RequestMapping("/test4")
+    public String test4() throws ExecutionException, InterruptedException {
+        // 用 ListenableFuture 对象接收返回值
+        ListenableFuture<Integer> listenableFuture = taskService.testListenalbeFuture();
+        // 增加回调
+        listenableFuture.addCallback(new ListenableFutureCallback<Integer>() {
+            // 失败的回调
+            @Override
+            public void onFailure(Throwable throwable) {
+                System.err.println("【ListenableFuture】进入失败回调，失败原因为：" + throwable.getMessage());
+            }
+    
+            // 成功的回调
+            @Override
+            public void onSuccess(Integer integer) {
+                System.out.println("【ListenableFuture】进入成功回调，返回值为：" + integer);
+            }
+        });
+        return "OK!!";
+    }
+    ```
+
+#### 2、统一异常处理
+
+全局异常处理器能处理返回值为**非Future接口类型**的异步方法的异常信息，步骤如下（类似配置拦截器）：
+
+1.  编写异常处理类，实现 `AsyncUncaughtExceptionHandler` 接口（未捕获的异步异常接口）
+
+    ```java
+    public class MyExceptionHandler implements AsyncUncaughtExceptionHandler {
+    
+        @Override
+        public void handleUncaughtException(Throwable ex, Method method, Object... params) {
+            System.err.println("【全局异常处理器】捕获到异常：" + ex.getMessage() + "\t 方法为：" + method.getName() + "\t 参数为：" + Arrays.asList(params));
+        }
+    
+    }
+    ```
+
+2.  编写异常处理配置类，实现 `AsyncConfigurer`，添加异常处理器
+
+    ```java
+    @Configuration
+    public class AsyncConfig implements AsyncConfigurer {
+    
+        @Override
+        public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+            return new MyExceptionHandler();
+        }
+    
+    }
+    ```
+
+#### 3、配置线程池
+
+-   重写异常处理配置类（实现`AsyncConfigurer` 接口）的方法：`Executor getAsyncExecutor()` 返回线程池即可。
+
+-   外部配置文件配置（**推荐**）：`spring.task.execution.XXX` ，一般配置项：
+    -   thread-name-prefix：线程前缀，用于区分普通线程
+    -   pool：线程池配置，可以配置线程池参数如核心线程数，最大线程数，超时时间等。
+    -   shutdown：关闭时动作，规定优雅地关闭服务时线程池的动作。
+
+### 定时任务
+
+1.  在配置类上标注 `@EnableScheduling`
+
+2.   在组件的方法上标注 `@Scheduled` 注解，并使用相应表达式来控制调度
+
+     ```java
+     @Component
+     public class TestJob {
+     
+         @Scheduled(fixedDelay = 5000)
+         public void test01(){
+             System.out.println("定时任务被调用，现在的时间为："+new SimpleDateFormat("HH:mm:ss").format(new Date()));
+         }
+     }
+     ```
+
+`@Scheduled`参数说明：
+
+![image-20201203103933497](_images/image-20201203103933497.png)
+
+-   cron：石英表达式。
+-   fixedDelay：上次执行完后再次执行的间隔
+-   fixedRate：上次执行后到再次执行的间隔
+-   initialDelay：初始的延迟执行时间。
+-   zone：根据时区信息来执行，留空即可。
 
 
 
@@ -574,7 +744,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 
 >   注意：要求这个配置是为 WebMvcConfigurerAdapter 类型,且不能加 @EnableWebMvc 注解
 
-#### 例1：SpringBoot 中实现中实现 mvc:mvc:view-controller 功能
+#### 1、SpringBoot 中实现中实现 mvc:mvc:view-controller 功能（直接跳转）
 
 实现 `addViewControllers` 方法即可。
 
@@ -591,7 +761,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 }
 ```
 
-#### 例2：实现拦截器功能
+#### 2、实现拦截器功能
 
 同SpringMVC一样，有两步：
 
@@ -637,14 +807,14 @@ public class SpringMvcConfig implements WebMvcConfigurer {
     }
     ```
 
-#### 配置三大组件：Filter、Listener、Servlet
+#### 3、配置三大组件：Filter、Listener、Servlet
 
 简单的两个步骤：
 
 1.  Filter或Servlet只需要在相应类上加上 `@Filter/@Servlet` 注解，并指定拦截的路径即可。而Listener只需要加上 `@Listener`  即可。注意都需要实现相应接口或继承相应类。
 2.  在SpringBoot的配置类上标注 `@ServletComponentScan` 注解，并指定扫描的包即可。
 
-### SpringBoot 整合 Redis
+### 4、SpringBoot 整合 Redis
 
 通过引入 Redis的starter可以整合Redis，使用的是 RedisTemplate来控制Redis，可以自动管理Redis连接池。
 
@@ -688,7 +858,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
     }
     ```
 
-#### 全面接管SpringMVC
+#### 5、全面接管SpringMVC
 
 在配置类上配置 `@EnableWebMvc` 即可。
 
@@ -698,49 +868,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 
 ![image-20201203125156318](_images/image-20201203125156318.png)
 
-### SpringBoot 定时任务
-
-SpringBoot的定时任务使用简单方便，使用步骤如下：
-
-1.  引入依赖
-
-    ```xml
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-context-support</artifactId>
-    </dependency>
-    ```
-
-2.  在配置类上标注 `@EnableScheduling`
-
-3.   在组件的方法上标注 `@Scheduled` 注解，并使用相应表达式来控制调度
-
-    ```java
-    @Component
-    public class TestJob {
-    
-        @Scheduled(fixedDelay = 5000)
-        public void test01(){
-            System.out.println("定时任务被调用，现在的时间为："+new SimpleDateFormat("HH:mm:ss").format(new Date()));
-        }
-    }
-    ```
-
-`@Scheduled`参数说明：
-
-![image-20201203103933497](_images/image-20201203103933497.png)
-
--   cron：石英表达式。
--   fixedDelay：上次执行完后再次执行的间隔
--   fixedRate：上次执行后到再次执行的间隔
--   initialDelay：初始的延迟执行时间。
--   zone：根据时区信息来执行，留空即可。
-
-### SpringBoot 整合整合 jpa
+### 7、SpringBoot 整合整合 jpa
 
 JPA简介：JPA是Java Persistence API的简称，描述对象－关系表的映射关系，并将运行期的实体对象持久化到数据库中。JPA的总体思想和现有Hibernate、TopLink、JDO等ORM框架大体一致。总的来说，JPA包括以下3方面的技术：
 

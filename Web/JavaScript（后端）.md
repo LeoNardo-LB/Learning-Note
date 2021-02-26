@@ -765,3 +765,14 @@ arr2 = arr.sort((a,b) => {
 })
 ```
 
+### 动态传值
+
+使用 `<对象>[<属性>]` 可以动态传值。相当于中括号内的内容经过解析后变成 `<对象>.<属性>`
+
+```js
+let person = {'name': 'leonardo', 'id': 123}
+person.name = "leo"
+// 等同于
+person["name"] = 'leo'
+```
+

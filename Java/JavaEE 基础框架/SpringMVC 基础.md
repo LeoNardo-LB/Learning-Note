@@ -39,7 +39,7 @@ View Resolver负责将处理结果生成View视图，View Resolver首先根据�
 
 ### 简略的执行流程
 
-![image-20201106200253800](_images/image-20201106200253800.png)
+![image-20210224083150499](_images/image-20210224083150499.png)
 
 ### 详细的执行流程
 
@@ -788,7 +788,7 @@ SpringMVC中的拦截器，它可以对SpringMVC的资源的请求进行拦截�
     -   `ModelAndView modelAndView` 是隐含模型与视图，用于数据的转发及网页渲染
     -   `Exception ex` 是 DispatcherServlet的 doDispatch方法中可能出现的异常。
 
-2.  在SpringMVC配置文件中配置拦截器
+2.  【XML配置】在SpringMVC配置文件中配置拦截器
 
     ```xml
     <!-- 配置拦截器组，可以配置多个。拦截器的先后顺序是：配置的从上到下顺序 -->
@@ -802,6 +802,14 @@ SpringMVC中的拦截器，它可以对SpringMVC的资源的请求进行拦截�
         </mvc:interceptor>
     </mvc:interceptors>
     ```
+
+2.  【配置类配置】
+
+    ```java
+    
+    ```
+
+    
 
 **测试结果**
 
@@ -822,6 +830,10 @@ handler.getClass() = class org.springframework.web.method.HandlerMethod
 ```
 
 ### 单拦截器异常流程
+
+拦截器执行处：如下图红色圆框所示位置
+
+![image-20210223105626590](_images/image-20210223105626590.png)
 
 目标方法前返回false的情况：
 

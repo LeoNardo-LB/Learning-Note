@@ -288,20 +288,34 @@ spring:
 -   GatewayFilter（单一）：需要通过`spring.cloud.routes.filters` 配置在具体路由下，只作用在当前路由上或通过 `spring.cloud.default-filters` 配置在全局，作用在所有路由上。
 -   GlobalFilter（全局）：全局过滤器，不需要在配置文件中配置，作用在所有的路由上，最终通过 `GatewayFilterAdapter` 包装成 `GatewayFilterChain` 可识别的过滤器，它为请求业务以及路由的URI转换为真实业务服务的请求地址的核心过滤器，不需要配置，系统初始化时加载，并作用在每个路由上。
 
-### 单一过滤器
+### 局部过滤器
 
 单一过滤器的使用方式即在Springboot配置文件中指定即可，如上述代码所示。
 
-自定义单一过滤器，需要继承 `AbstractGatewayFilterFactory` 抽象类，并添加到IOC容器中：
+#### 1、内置局部过滤器
+
+Gateway内置了一系列局部过滤器，用于在经过网关前后对请求/响应进行操作
+
+![image-20210223192450743](_images/image-20210223192450743.png)
+
+使用局部过滤器只需要去掉过滤器后的 `GatewayFilterFactory` 即可，如 使用添加参数的过滤器：
+
+```
+AddRequestParameterGatewayFilterFactory -> AddRequestParameter
+```
+
+#### 2、自定义局部过滤器
+
+自定义局部过滤器，需要继承 `AbstractGatewayFilterFactory` 抽象类，并添加到IOC容器中：
 
 ```java
 // 实现 AbstractGatewayFilterFactory 抽象类，并添加到IOC容器中
 @Component
-public class MySingleFilter extends AbstractGatewayFilterFactory {
+public class MyGatewayFilterFactory extends AbstractGatewayFilterFactory {	// 命名规则 XxxGatewayFilterFactory
 
     @Override
     public GatewayFilter apply(Object config) {
-        return new GatewayFilter() {
+        return new GatewayFilter() {	// 直接返回一个GatewayFilter的实现类
             // 自定义过滤规则
             @Override
             public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -313,6 +327,85 @@ public class MySingleFilter extends AbstractGatewayFilterFactory {
                 return chain.filter(exchange);
             }
         };
+    }
+
+}
+```
+
+##### 接收多个参数（集合）
+
+1.  自定义内部配置类 `XxxConfig` （名字不限）
+2.  继承 `AbstractGatewayFilterFactory` 指定泛型，泛型必须是 `KeyValueConfig`
+3.  重写父类的构造方法并指定接受参数的 `XxxConfig`
+4.  重写 `shortcutFieldOrder` 方法，指定接收的字段名称
+5.  重写 `shortcutType` 方法，返回接受策略为 `ShortcutType.GATHER_LIST`
+
+```java
+@Component
+public class AuthGatewayFilterFactory extends AbstractGatewayFilterFactory<AuthGatewayFilterFactory.PathConfig> {   // 泛型为内部类
+
+     /**
+     * 定义内部类,属性即为参数的名称
+     */
+    public static class PathConfig {
+
+        private List<String> list;
+
+        public PathConfig() {
+        }
+
+        public List<String> getList() {
+            return list;
+        }
+
+        public void setList(List<String> list) {
+            this.list = list;
+        }
+
+        public PathConfig(List<String> list) {
+            this.list = list;
+        }
+
+    }
+    
+    
+    /**
+     * 重写apply方法：过滤器的主业务逻辑
+     */
+    @Override
+    public GatewayFilter apply(PathConfig config) {
+        return new GatewayFilter() {
+            @Override
+            public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+                List<String> list = config.list;
+                list.forEach(System.out::println);
+                return chain.filter(exchange);
+            }
+        };
+    }
+    
+    /**
+     * 使用父类构造器, 将内部类字节码传入
+     */
+    public AuthGatewayFilterFactory() {
+        super(PathConfig.class);
+    }
+
+    /**
+     * 重写 shortcutFieldOrder
+     * 指定顺序, 此处为内部类接收过滤器参数的属性名
+     */
+    @Override
+    public List<String> shortcutFieldOrder() {
+        return Arrays.asList("list");
+    }
+
+    /**
+     * 重写 shortcutType 方法
+     */
+    @Override
+    public ShortcutType shortcutType() {
+        return ShortcutType.GATHER_LIST;
     }
 
 }

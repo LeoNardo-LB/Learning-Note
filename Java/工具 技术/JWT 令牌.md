@@ -29,6 +29,11 @@ JWT的原理：
 -   一个JWT由三个部分组成：JWT头、有效载荷、签名哈希
 -   最后由这三者组合进行base64编码得到JWT
 
+>   非对称加密 RSA 基本原理：同时生成两把密钥：私钥和公钥，私钥隐秘保存，公钥可以下发给信任客户端
+>
+>   - 私钥加密，持有公钥才可以解密
+>   - 公钥加密，持有私钥才可解密
+
 
 
 ## JWT 结构
@@ -127,8 +132,8 @@ public class JwtTest {
     public void testBuiltJwt() {
         String compact = Jwts.builder()
             .setHeaderParam("alg", "HS256") //设置加密算法
-            .setHeaderParam("typ", "jwt")   //设置类型（固定jwt）
-            .setExpiration(new Date(System.currentTimeMillis() + tokenExpiration))
+            .setHeaderParam("typ", "jwt")   //设置类型（默认jwt）
+            .setExpiration(new Date(System.currentTimeMillis() + tokenExpiration))	// 设置超时时间
             .claim("nikename", "laonardo")	//设置jwtbody
             .claim("avatar", "1.jpg")	//设置jwtbody
             .signWith(SignatureAlgorithm.HS256, secretKey)	//设置加密算法
@@ -155,21 +160,21 @@ public class JwtTest {
         System.out.println("body = " + body);
         System.out.println("header = " + header);
 
-        // 输出查看jwt的body内容
-        Claims cBody = (Claims) body;
-        Date exp = cBody.get("exp", Date.class);
-        // 使用get获取指定内容
-        String nikename = cBody.get("nikename", String.class);
-        String avatar = cBody.get("avatar", String.class);
-        System.out.println("exp = " + exp);
-        System.out.println("nikename = " + nikename);
-        System.out.println("avatar = " + avatar);
-
         // 输出查看jwt的header内容
         Object alg = header.get("alg");
         String algorithm = header.getCompressionAlgorithm();
         System.out.println("alg = " + alg); // HS256
         System.out.println("algorithm = " + algorithm); // null
+        
+        // 输出查看jwt的body内容
+        Claims cBody = (Claims) body;
+        Date exp = cBody.get("exp", Date.class);
+        // 使用get获取载荷的指定内容
+        String nikename = cBody.get("nikename", String.class);
+        String avatar = cBody.get("avatar", String.class);
+        System.out.println("exp = " + exp);
+        System.out.println("nikename = " + nikename);
+        System.out.println("avatar = " + avatar);
     }
 
 }

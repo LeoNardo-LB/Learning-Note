@@ -1038,13 +1038,13 @@ public void listenMethod2(String msg, Channel channel, Message message) {
 
 ### 设置消息到达回调
 
-1、在消息提供方的Springboot配置文件配置开启回调。
+1、在**消息提供方**的Springboot配置文件配置开启回调。
 
 ```properties
 # SIMPLE-同步确认（阻塞） CORRELATED-异步确认
 spring.rabbitmq.publisher-confirm-type=simple   
 # 确认消息是否到达队列
-spring.rabbitmq.publisher-returns=true  
+spring.rabbitmq.publisher-returns=true
 ```
 
 2、在消息提供方的配置类中，对RabbitTemplate进行设置：
@@ -1055,6 +1055,7 @@ RabbitTemplate rabbitTemplate;
 
 @PostConstruct
 public void init() {
+    
     // 设置数据到达交换机的回调函数
     rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
         if (ack) {
@@ -1065,10 +1066,9 @@ public void init() {
     });
 
     // 设置数据未到达队列的回调函数
-    rabbitTemplate.setReturnsCallback((message) -> {
-        log.warn("数据未到达队列！");
-        log.warn("返回消息为：状态码：{}, 交换机：{}, 路由键：{}, 消息内容：{}"
-                , message.getReplyCode(), message.getExchange(), message.getRoutingKey(), message.getMessage());
+    rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
+        log.warn("数据未到达队列！消息id：{}, 交换机：{}, 路由键：{}, 消息内容：{}"
+                 , message.getMessageProperties().getMessageId(), exchange, routingKey, new String(message.getBody()));
     });
 }
 ```
@@ -1084,7 +1084,7 @@ public void init() {
 
 ```properties
 # manual-手动  auto-自动（无异常直接确认，有异常无限重试） none-不重试
-spring.rabbitmq.listener.simple.acknowledge-mode=none
+spring.rabbitmq.listener.simple.acknowledge-mode=manual
 ```
 
 2、在监听方法中，根据不同业务逻辑做不同的操作
@@ -1110,6 +1110,11 @@ public void listenMethod(String msg, Channel channel, Message message) throws IO
     }
 }
 ```
+
+>   basicReject 与 basicNack：
+>
+>   -   basicReject 一次只能拒绝一条消息。
+>   -   basicNack 一次可以拒绝多条消息，可以nack该消费者先前接收未ack的所有消息。nack后的消息也会被自己消费到。
 
 ### 绑定死信队列
 
@@ -1218,3 +1223,75 @@ public void listenDeadQueueMethod(String message){
     // 业务逻辑
 }
 ```
+
+
+
+# RabbitMQ 面试题
+
+## 1、如何避免消息堆积
+
+1.  搭建消费者集群（配置能者多劳：channel.basicQos(1)）
+    	spring.rabbitmq.listener.simple.prefetch=1
+2.  开启多线程消费
+    	spring.rabbitmq.listener.simple.concurrency=4
+
+
+
+## 2、如何避免消息丢失
+
+在每个环节进行确认，确认完毕后再进行下一步。
+
+1.  生产者确认：确保消息发送给mq
+
+    ```properties
+    spring.rabbitmq.publisher-confirm-type=correlated/simple/none
+    spring.rabbitmq.publisher-returns=true
+    ```
+
+    ```java
+    // 配置类中
+    rabbitTemplate.setConfirmCallback();
+    rabbitTemplate.setReturnCallback();
+    ```
+
+2.  消息持久化：确保mq服务器即使宕机也不会丢失消息。交换机持久化（默认） 队列持久化（默认） 消息持久化（默认）
+
+3.  消费者确认：确保消息正确无误的消费
+
+    -   原生API：
+        		自动确认：只要消费者获取到消息即确认
+        		手动确认：
+
+    -   springboot：
+
+        -   none-不确认模式，只要消费者获取到消息，消息即确认掉，相当于原生API中的自动确认
+
+        -   auto-自动确认默认，如果消费者在处理消息的过程中没有异常即确认，如果出现异常会无限重试
+
+        -   manual-手动确认模式，相当于原生API中的手动确认：
+
+            ```java
+            channel.basicAck() ;
+            channel.basicNack(); 
+            channel.basicReject();
+            ```
+
+            
+
+## 3、如何确保消息顺序性？
+
+一个消费者，或者设置为排他队列（exclusive），为了保证性能，可以使用多线程消费（公平锁或者jvm的queue）
+
+>   当一个消费者消费后就无法使用其他消费者消费 
+
+
+
+## 4、怎么避免消息的重复消费？（幂等性问题）
+
+1.  rabbitmq的队列可以同时有多个消费者（工作模型），但是每个消息只能被一个消费者消费。这个维度没有重复消费问题
+
+2.  如果在消费消息的过程中出现异常重试，可能会导致重复消费。
+
+    如果使用的是关系型数据库，可以结合事务防止重复消费
+
+    如果是非关系型数据库，只能手动回滚

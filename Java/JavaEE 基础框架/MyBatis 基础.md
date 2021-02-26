@@ -1012,6 +1012,8 @@ choose包裹 when与 otherwise标签，从上至下执行，当有一处when标�
 
 ### where、set、trim 标签
 
+这三个标签可以很好地配合 `<if>` 标签使用，用于修正if语句中缺少或多出的部分
+
 #### where 标签
 
 说明：where语句，可以帮我们在多个动态语句中，有效的去掉前面的多余的 and 或 or 等多余的关键字。如果where标签体内没有内容，则会不加where标签
